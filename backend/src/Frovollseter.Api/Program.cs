@@ -85,6 +85,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Endpoint groups
+app.MapSetupEndpoints();
 app.MapAuthEndpoints();
 app.MapRoadReportEndpoints();
 app.MapNewsEndpoints();
