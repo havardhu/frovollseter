@@ -1,17 +1,18 @@
 import { useState } from "react";
+import { AlertTriangle, CheckCircle, Droplets, Lock, Truck, XCircle, type LucideIcon } from "lucide-react";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const STATUS_OPTIONS = [
-  { value: "RecentlyPlowed", label: "🚜 Nettopp brøytet" },
-  { value: "SummerTiresOk", label: "✅ Sommerdekk OK" },
-  { value: "FourWheelDriveRecommended", label: "⚠️ 4WD anbefalt" },
-  { value: "FloodDamage", label: "🌊 Flomskade" },
-  { value: "UnsafeDangerous", label: "🚫 Farlig / usikker" },
-  { value: "Closed", label: "🔒 Stengt" },
+const STATUS_OPTIONS: { value: string; label: string; Icon: LucideIcon }[] = [
+  { value: "RecentlyPlowed", label: "Nettopp brøytet", Icon: Truck },
+  { value: "SummerTiresOk", label: "Sommerdekk OK", Icon: CheckCircle },
+  { value: "FourWheelDriveRecommended", label: "4WD anbefalt", Icon: AlertTriangle },
+  { value: "FloodDamage", label: "Flomskade", Icon: Droplets },
+  { value: "UnsafeDangerous", label: "Farlig / usikker", Icon: XCircle },
+  { value: "Closed", label: "Stengt", Icon: Lock },
 ];
 
 interface Props {
@@ -61,12 +62,13 @@ export function ReportForm({ onSubmitted, onCancel }: Props) {
                   key={opt.value}
                   type="button"
                   onClick={() => setStatus(opt.value)}
-                  className={`rounded-md border p-2 text-sm text-left transition-colors ${
+                  className={`flex items-center gap-2 rounded-md border p-2 text-sm text-left transition-colors ${
                     status === opt.value
                       ? "border-primary bg-primary/10 font-medium"
                       : "border-border hover:bg-muted"
                   }`}
                 >
+                  <opt.Icon className="h-3.5 w-3.5 shrink-0" />
                   {opt.label}
                 </button>
               ))}

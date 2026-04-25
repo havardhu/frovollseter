@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Camera } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
 import { api } from "@/api/client";
@@ -44,7 +45,9 @@ export function WebcamsPage() {
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-40 bg-muted flex items-center justify-center text-3xl">📷</div>
+                <div className="w-full h-40 bg-muted flex items-center justify-center">
+                  <Camera className="h-9 w-9 text-muted-foreground opacity-35" />
+                </div>
               )}
               <CardHeader className="pb-2 pt-3">
                 <div className="flex items-start justify-between gap-2">

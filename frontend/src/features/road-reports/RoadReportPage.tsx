@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle, Droplets, HelpCircle, Lock, Plus, RefreshCw, Truck, XCircle, type LucideIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
 import { api } from "@/api/client";
@@ -12,15 +12,15 @@ import { ReportForm } from "./ReportForm";
 
 const STATUS_CONFIG: Record<
   RoadStatus,
-  { label: string; variant: BadgeProps["variant"]; icon: string }
+  { label: string; variant: BadgeProps["variant"]; Icon: LucideIcon; iconColor: string }
 > = {
-  Unknown: { label: "Ukjent", variant: "outline", icon: "❓" },
-  RecentlyPlowed: { label: "Nettopp brøytet", variant: "safe", icon: "🚜" },
-  SummerTiresOk: { label: "Sommerdekk OK", variant: "safe", icon: "✅" },
-  FourWheelDriveRecommended: { label: "4WD anbefalt", variant: "caution", icon: "⚠️" },
-  FloodDamage: { label: "Flomskade", variant: "danger", icon: "🌊" },
-  UnsafeDangerous: { label: "Farlig", variant: "danger", icon: "🚫" },
-  Closed: { label: "Stengt", variant: "closed", icon: "🔒" },
+  Unknown: { label: "Ukjent", variant: "outline", Icon: HelpCircle, iconColor: "hsl(215 16% 47%)" },
+  RecentlyPlowed: { label: "Nettopp brøytet", variant: "safe", Icon: Truck, iconColor: "hsl(142 76% 36%)" },
+  SummerTiresOk: { label: "Sommerdekk OK", variant: "safe", Icon: CheckCircle, iconColor: "hsl(142 76% 36%)" },
+  FourWheelDriveRecommended: { label: "4WD anbefalt", variant: "caution", Icon: AlertTriangle, iconColor: "hsl(38 92% 50%)" },
+  FloodDamage: { label: "Flomskade", variant: "danger", Icon: Droplets, iconColor: "hsl(0 84% 60%)" },
+  UnsafeDangerous: { label: "Farlig", variant: "danger", Icon: XCircle, iconColor: "hsl(0 84% 60%)" },
+  Closed: { label: "Stengt", variant: "closed", Icon: Lock, iconColor: "hsl(215 16% 47%)" },
 };
 
 export function RoadReportPage() {
@@ -104,7 +104,9 @@ function RoadReportCard({ report }: { report: RoadReport }) {
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-2xl" aria-hidden>{config.icon}</span>
+            <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+              <config.Icon className="h-[18px] w-[18px]" style={{ color: config.iconColor }} />
+            </div>
             <div>
               <div className="flex items-center gap-2">
                 <Badge variant={config.variant}>{config.label}</Badge>

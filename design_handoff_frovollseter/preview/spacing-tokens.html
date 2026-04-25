@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #fff; padding: 14px; box-sizing: border-box; }
+  .section { margin-bottom: 14px; }
+  .title { font-size: 10px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .row { display: flex; gap: 10px; align-items: flex-end; }
+  .token { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .swatch-space { background: hsl(213 72% 30% / .15); border-radius: 3px; }
+  .label { font-size: 9px; color: #9ca3af; font-family: monospace; text-align: center; }
+  .val { font-size: 8px; color: #d1d5db; font-family: monospace; }
+  .radius-demo { background: hsl(213 72% 30% / .12); border: 1.5px solid hsl(213 72% 30% / .3); width: 52px; height: 36px; }
+</style></head>
+<body>
+  <div class="section">
+    <div class="title">Spacing Scale</div>
+    <div class="row">
+      <div class="token"><div class="swatch-space" style="width:4px;height:4px"></div><span class="label">1<br>4px</span></div>
+      <div class="token"><div class="swatch-space" style="width:8px;height:8px"></div><span class="label">2<br>8px</span></div>
+      <div class="token"><div class="swatch-space" style="width:12px;height:12px"></div><span class="label">3<br>12px</span></div>
+      <div class="token"><div class="swatch-space" style="width:16px;height:16px"></div><span class="label">4<br>16px</span></div>
+      <div class="token"><div class="swatch-space" style="width:20px;height:20px"></div><span class="label">5<br>20px</span></div>
+      <div class="token"><div class="swatch-space" style="width:24px;height:24px"></div><span class="label">6<br>24px</span></div>
+      <div class="token"><div class="swatch-space" style="width:32px;height:32px"></div><span class="label">8<br>32px</span></div>
+      <div class="token"><div class="swatch-space" style="width:40px;height:40px"></div><span class="label">10<br>40px</span></div>
+      <div class="token"><div class="swatch-space" style="width:48px;height:48px"></div><span class="label">12<br>48px</span></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="title">Border Radius</div>
+    <div class="row">
+      <div class="token">
+        <div class="radius-demo" style="border-radius:0"></div>
+        <span class="label">none<br>0px</span>
+      </div>
+      <div class="token">
+        <div class="radius-demo" style="border-radius:4px"></div>
+        <span class="label">sm<br>4px</span>
+      </div>
+      <div class="token">
+        <div class="radius-demo" style="border-radius:6px"></div>
+        <span class="label">md<br>6px</span>
+      </div>
+      <div class="token">
+        <div class="radius-demo" style="border-radius:8px"></div>
+        <span class="label">lg<br>8px — card</span>
+      </div>
+      <div class="token">
+        <div class="radius-demo" style="border-radius:12px"></div>
+        <span class="label">xl<br>12px</span>
+      </div>
+      <div class="token">
+        <div class="radius-demo" style="border-radius:9999px;width:60px;height:24px"></div>
+        <span class="label">full<br>badge</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

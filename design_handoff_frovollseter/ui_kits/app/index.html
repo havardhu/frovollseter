@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frovollseter — UI Kit</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+/* ── CSS Variables ─────────────────────────────────────────── */
+:root {
+  --background:        hsl(0 0% 100%);
+  --foreground:        hsl(222.2 84% 4.9%);
+  --card:              hsl(0 0% 100%);
+  --card-foreground:   hsl(222.2 84% 4.9%);
+  --primary:           hsl(213 72% 30%);
+  --primary-fg:        hsl(210 40% 98%);
+  --secondary:         hsl(210 40% 96.1%);
+  --secondary-fg:      hsl(222.2 47.4% 11.2%);
+  --muted:             hsl(210 40% 96.1%);
+  --muted-foreground:  hsl(215.4 16.3% 46.9%);
+  --accent:            hsl(210 40% 96.1%);
+  --accent-fg:         hsl(222.2 47.4% 11.2%);
+  --destructive:       hsl(0 84.2% 60.2%);
+  --border:            hsl(214.3 31.8% 91.4%);
+  --input:             hsl(214.3 31.8% 91.4%);
+  --ring:              hsl(213 72% 30%);
+  --radius:            0.5rem;
+}
+.dark {
+  --background:        hsl(222.2 84% 4.9%);
+  --foreground:        hsl(210 40% 98%);
+  --card:              hsl(222.2 84% 4.9%);
+  --card-foreground:   hsl(210 40% 98%);
+  --primary:           hsl(213 72% 55%);
+  --primary-fg:        hsl(222.2 47.4% 11.2%);
+  --secondary:         hsl(217.2 32.6% 17.5%);
+  --secondary-fg:      hsl(210 40% 98%);
+  --muted:             hsl(217.2 32.6% 17.5%);
+  --muted-foreground:  hsl(215 20.2% 65.1%);
+  --accent:            hsl(217.2 32.6% 17.5%);
+  --accent-fg:         hsl(210 40% 98%);
+  --destructive:       hsl(0 62.8% 30.6%);
+  --border:            hsl(217.2 32.6% 17.5%);
+  --input:             hsl(217.2 32.6% 17.5%);
+  --ring:              hsl(213 72% 55%);
+}
+
+/* ── Reset & Base ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; color: var(--foreground); background: var(--background); -webkit-font-smoothing: antialiased; transition: background .2s, color .2s; }
+
+/* ── App shell ─────────────────────────────────────────────── */
+.frv-app { min-height: 100vh; display: flex; flex-direction: column; background: var(--background); color: var(--foreground); }
+
+/* ── Header ────────────────────────────────────────────────── */
+.frv-header { position: sticky; top: 0; z-index: 40; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--background) 95%, transparent); backdrop-filter: blur(8px); }
+.frv-header-inner { max-width: 768px; margin: 0 auto; padding: 0 16px; height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.frv-logo { font-size: 16px; font-weight: 700; color: var(--foreground); display: flex; align-items: center; gap: 6px; cursor: pointer; text-decoration: none; border: none; background: none; font-family: inherit; }
+.frv-logo-text { display: inline; }
+.frv-nav { display: flex; gap: 4px; }
+.frv-nav-link { padding: 6px 12px; border-radius: 6px; font-size: 14px; color: var(--muted-foreground); background: none; border: none; font-family: inherit; cursor: pointer; transition: background .15s, color .15s; display: inline-flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap; }
+.frv-nav-link:hover { background: var(--muted); color: var(--foreground); }
+.frv-nav-link.active { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); font-weight: 500; }
+.frv-header-actions { display: flex; gap: 4px; align-items: center; }
+.frv-mobile-menu-btn { display: none; }
+.frv-mobile-nav { display: none; border-top: 1px solid var(--border); background: var(--background); padding: 8px 16px; }
+.frv-mobile-nav-link { display: block; width: 100%; text-align: left; margin-bottom: 2px; }
+
+/* ── Main ──────────────────────────────────────────────────── */
+.frv-main { flex: 1; max-width: 768px; margin: 0 auto; width: 100%; padding: 24px 16px; }
+.frv-footer { border-top: 1px solid var(--border); padding: 16px; text-align: center; font-size: 12px; color: var(--muted-foreground); }
+
+/* ── Page titles ───────────────────────────────────────────── */
+.frv-page-title { font-size: 24px; font-weight: 700; margin: 0 0 4px; line-height: 1.25; color: var(--foreground); }
+.frv-page-subtitle { font-size: 14px; color: var(--muted-foreground); margin: 0; }
+
+/* ── Card ──────────────────────────────────────────────────── */
+.frv-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--card-foreground); }
+.frv-card-header { padding: 16px 16px 8px; }
+.frv-card-content { padding: 0 16px 16px; }
+
+/* ── Badge ─────────────────────────────────────────────────── */
+.frv-badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 9999px; padding: 2px 10px; font-size: 12px; font-weight: 600; border: 1px solid transparent; line-height: 1.5; }
+.frv-badge-default     { background: var(--primary); color: var(--primary-fg); }
+.frv-badge-secondary   { background: var(--secondary); color: var(--secondary-fg); }
+.frv-badge-outline     { border-color: var(--border); color: var(--foreground); background: transparent; }
+.frv-badge-destructive { background: var(--destructive); color: #fff; }
+.frv-badge-safe        { background: #dcfce7; color: #166534; }
+.frv-badge-caution     { background: #fef3c7; color: #92400e; }
+.frv-badge-danger      { background: #fee2e2; color: #991b1b; }
+.frv-badge-closed      { background: #f3f4f6; color: #4b5563; }
+.dark .frv-badge-safe   { background: #14532d; color: #86efac; }
+.dark .frv-badge-caution{ background: #451a03; color: #fcd34d; }
+.dark .frv-badge-danger { background: #450a0a; color: #fca5a5; }
+.dark .frv-badge-closed { background: #1f2937; color: #9ca3af; }
+
+/* ── Button ────────────────────────────────────────────────── */
+.frv-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 6px; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; border: none; transition: background .15s, opacity .15s; white-space: nowrap; padding: 8px 16px; height: 40px; }
+.frv-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.frv-btn-default     { background: var(--primary); color: var(--primary-fg); }
+.frv-btn-default:hover:not(:disabled) { background: color-mix(in srgb, var(--primary) 90%, black); }
+.frv-btn-secondary   { background: var(--secondary); color: var(--secondary-fg); }
+.frv-btn-secondary:hover:not(:disabled) { background: color-mix(in srgb, var(--secondary) 80%, black); }
+.frv-btn-outline     { background: transparent; color: var(--foreground); border: 1px solid var(--border); }
+.frv-btn-outline:hover:not(:disabled) { background: var(--accent); }
+.frv-btn-ghost       { background: transparent; color: var(--foreground); }
+.frv-btn-ghost:hover:not(:disabled) { background: var(--accent); }
+.frv-btn-destructive { background: var(--destructive); color: #fff; }
+.frv-btn-link        { background: transparent; color: var(--primary); text-decoration: underline; height: auto; padding: 0; }
+.frv-btn-sm { height: 36px; padding: 6px 12px; font-size: 13px; }
+.frv-btn-lg { height: 44px; padding: 10px 24px; font-size: 15px; }
+.frv-btn-icon { width: 40px; height: 40px; padding: 0; }
+.frv-flex-1 { flex: 1; }
+
+/* ── Input ─────────────────────────────────────────────────── */
+.frv-input { font-family: inherit; font-size: 14px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--input); background: var(--background); color: var(--foreground); outline: none; width: 100%; transition: border-color .15s, box-shadow .15s; }
+.frv-input:focus { border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent); }
+.frv-input::placeholder { color: var(--muted-foreground); }
+
+/* ── Label ─────────────────────────────────────────────────── */
+.frv-label { font-size: 13px; font-weight: 500; color: var(--foreground); display: block; margin-bottom: 6px; }
+
+/* ── Option button (report form) ───────────────────────────── */
+.frv-opt-btn { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; background: var(--background); color: var(--foreground); cursor: pointer; text-align: left; font-family: inherit; transition: background .15s, border-color .15s; }
+.frv-opt-btn:hover { background: var(--muted); }
+.frv-opt-btn.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); color: var(--primary); font-weight: 500; }
+
+/* ── Animation ─────────────────────────────────────────────── */
+@keyframes frv-spin { to { transform: rotate(360deg); } }
+@keyframes frv-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.frv-skeleton { background: var(--muted); border-radius: 8px; animation: frv-pulse 1.5s ease-in-out infinite; }
+
+/* ── Mobile ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .frv-nav { display: none; }
+  .frv-mobile-menu-btn { display: inline-flex; }
+  .frv-mobile-nav { display: block; }
+  .frv-logo-text { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="Components.jsx"></script>
+<script type="text/babel" src="Layout.jsx"></script>
+<script type="text/babel" src="RoadReportPage.jsx"></script>
+<script type="text/babel" src="Pages.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+function App() {
+  const [page, setPage] = useState("road");
+  const [dark, setDark] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const toggleDark = () => {
+    setDark(d => !d);
+  };
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    setPage("road");
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setPage("road");
+  };
+
+  if (page === "login") {
+    return (
+      <div className={dark ? "dark" : ""} style={{ background: "var(--background)", minHeight: "100vh" }}>
+        <LoginPage onLogin={handleLogin} onBack={() => setPage("road")} />
+      </div>
+    );
+  }
+
+  const pageContent = {
+    road:    <RoadReportPage isAuthenticated={isAuthenticated} />,
+    news:    <NewsPage />,
+    webcams: <WebcamsPage />,
+    links:   <LinksPage />,
+  }[page] || <RoadReportPage isAuthenticated={isAuthenticated} />;
+
+  return (
+    <Layout
+      page={page}
+      setPage={setPage}
+      dark={dark}
+      toggleDark={toggleDark}
+      isAuthenticated={isAuthenticated}
+      onLogout={handleLogout}
+    >
+      {pageContent}
+    </Layout>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #fff; padding: 16px; box-sizing: border-box; }
+  .row { display: flex; gap: 16px; align-items: flex-start; }
+  .col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 13px; font-weight: 500; color: hsl(222.2 84% 4.9%); }
+  input { font-family: 'Inter', system-ui, sans-serif; font-size: 14px; padding: 8px 12px; border-radius: 6px; border: 1px solid hsl(214.3 31.8% 91.4%); background: #fff; color: hsl(222.2 84% 4.9%); outline: none; width: 100%; box-sizing: border-box; }
+  input:focus { border-color: hsl(213 72% 30%); box-shadow: 0 0 0 2px hsl(213 72% 30% / .2); }
+  input::placeholder { color: #9ca3af; }
+  .input-error { border-color: hsl(0 84.2% 60.2%); box-shadow: 0 0 0 2px hsl(0 84.2% 60.2% / .15); }
+  .error-msg { font-size: 12px; color: hsl(0 84.2% 60.2%); display: flex; align-items: center; gap: 4px; }
+  .hint { font-size: 11px; color: #9ca3af; }
+  .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .opt { border: 1px solid hsl(214.3 31.8% 91.4%); border-radius: 6px; padding: 7px 10px; font-size: 13px; background: #fff; cursor: pointer; display: flex; align-items: center; gap: 7px; color: hsl(222.2 84% 4.9%); }
+  .opt svg { flex-shrink: 0; }
+  .opt-active { border-color: hsl(213 72% 30%); background: hsl(213 72% 30% / .08); font-weight: 500; color: hsl(213 72% 30%); }
+  .opt-active svg { stroke: hsl(213 72% 30%); }
+</style></head>
+<body>
+  <div class="row">
+    <div class="col">
+      <label>E-postadresse</label>
+      <input type="email" placeholder="deg@example.no" />
+      <span class="hint">Vi sender en innloggingslenke</span>
+    </div>
+    <div class="col">
+      <label>Vegstrekning</label>
+      <input type="text" placeholder="f.eks. «Fra bommen til første sving»" />
+    </div>
+    <div class="col">
+      <label>Engangskode</label>
+      <input type="text" class="input-error" value="12345" />
+      <span class="error-msg">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="hsl(0 84.2% 60.2%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Ugyldig eller utløpt kode. Prøv igjen.
+      </span>
+    </div>
+  </div>
+  <div style="margin-top:14px">
+    <label style="display:block;margin-bottom:6px">Tilstand</label>
+    <div class="opt-grid">
+      <!-- Active: Sommerdekk OK — checkmark -->
+      <button class="opt opt-active">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="hsl(213 72% 30%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Sommerdekk OK
+      </button>
+      <!-- 4WD — alert triangle -->
+      <button class="opt">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        4WD anbefalt
+      </button>
+      <!-- Flood — droplets -->
+      <button class="opt">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        Flomskade
+      </button>
+      <!-- Closed — lock -->
+      <button class="opt">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Stengt
+      </button>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Mail } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import { Button } from "@/components/ui/button";
@@ -116,7 +117,7 @@ export function LoginPage() {
 
           {step === "link-sent" && (
             <div className="text-center space-y-3">
-              <p className="text-2xl">📬</p>
+              <Mail className="h-9 w-9 mx-auto text-muted-foreground" />
               <p className="font-medium">Sjekk innboksen din</p>
               <p className="text-sm text-muted-foreground">
                 Vi har sendt en innloggingslenke til <strong>{email}</strong>. Lenken er gyldig i 15 minutter.
