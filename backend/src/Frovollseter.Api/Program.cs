@@ -51,6 +51,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+        opts.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = ctx =>
+            {
+                Console.Error.WriteLine($"[JWT] Auth failed: {ctx.Exception.GetType().Name}: {ctx.Exception.Message}");
+                return Task.CompletedTask;
+            },
+            OnMessageReceived = ctx =>
+            {
+                var header = ctx.Request.Headers.Authorization.ToString();
+                Console.Error.WriteLine($"[JWT] Authorization header present: {!string.IsNullOrEmpty(header)}, length: {header.Length}");
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
