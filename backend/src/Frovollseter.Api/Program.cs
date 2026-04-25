@@ -16,7 +16,9 @@ var rawConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? throw new InvalidOperationException("No database connection string found.");
 
 var connectionString = ConvertDatabaseUrl(rawConnectionString);
-builder.Services.AddDbContext<FrovollseterDbContext>(opts => opts.UseNpgsql(connectionString));
+builder.Services.AddDbContext<FrovollseterDbContext>(opts =>
+    opts.UseNpgsql(connectionString, npgsql =>
+        npgsql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorCodesToAdd: null)));
 
 // Auth services
 builder.Services.AddSingleton<TokenService>();
