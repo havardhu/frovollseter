@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
@@ -7,8 +7,12 @@ export function VerifyPage() {
   const { verifyMagicLink } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"verifying" | "error">("verifying");
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
     const token = params.get("token");
     if (!token) {
       setStatus("error");

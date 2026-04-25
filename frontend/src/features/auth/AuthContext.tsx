@@ -23,34 +23,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchMe = useCallback(async () => {
-    try {
-      const me = await api.get<CurrentUser>("/auth/me");
-      setUser(me);
-    } catch {
-      setUser(null);
-    }
+    const me = await api.get<CurrentUser>("/auth/me");
+    setUser(me);
   }, []);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("access_token");
     if (stored) {
       setAccessToken(stored);
-      fetchMe().finally(() => setIsLoading(false));
+      fetchMe()
+        .catch(() => {
+          sessionStorage.removeItem("access_token");
+          setAccessToken(null);
+        })
+        .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
   }, [fetchMe]);
 
-  const storeToken = (token: string) => {
+  const storeToken = useCallback((token: string) => {
     sessionStorage.setItem("access_token", token);
     setAccessToken(token);
-  };
+  }, []);
 
   const requestMagicLink = async (email: string) => {
     await api.post("/auth/request-magic-link", { email });
   };
 
-  const verifyMagicLink = async (token: string): Promise<boolean> => {
+  const verifyMagicLink = useCallback(async (token: string): Promise<boolean> => {
     try {
       const res = await api.post<{ accessToken: string }>("/auth/verify-magic-link", { token });
       storeToken(res.accessToken);
@@ -59,13 +60,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       return false;
     }
-  };
+  }, [fetchMe, storeToken]);
 
   const requestOtp = async (email: string) => {
     await api.post("/auth/request-otp", { email });
   };
 
-  const verifyOtp = async (email: string, code: string): Promise<boolean> => {
+  const verifyOtp = useCallback(async (email: string, code: string): Promise<boolean> => {
     try {
       const res = await api.post<{ accessToken: string }>("/auth/verify-otp", { email, code });
       storeToken(res.accessToken);
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       return false;
     }
-  };
+  }, [fetchMe, storeToken]);
 
   const logout = async () => {
     await api.post("/auth/logout");
