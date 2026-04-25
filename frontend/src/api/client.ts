@@ -16,8 +16,6 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
-  console.log(`[client] ${init.method ?? "GET"} ${path} - accessToken set: ${!!accessToken}, length: ${accessToken?.length ?? 0}`);
-
   const res = await fetch(`${BASE}${path}`, { ...init, headers, credentials: "include" });
 
   if (!res.ok) {

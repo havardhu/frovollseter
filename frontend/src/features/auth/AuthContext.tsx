@@ -54,12 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const verifyMagicLink = useCallback(async (token: string): Promise<boolean> => {
     try {
       const res = await api.post<{ accessToken: string }>("/auth/verify-magic-link", { token });
-      console.log("[auth] verify-magic-link response:", JSON.stringify(res));
       storeToken(res.accessToken);
       await fetchMe();
       return true;
-    } catch (e) {
-      console.error("[auth] verifyMagicLink failed:", e);
+    } catch {
       return false;
     }
   }, [fetchMe, storeToken]);
