@@ -15,7 +15,7 @@ RUN dotnet publish src/Frovollseter.Api/Frovollseter.Api.csproj -c Release -o /a
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
+RUN useradd -m appuser && chown -R appuser /app
 USER appuser
 
 COPY --from=build /app/publish .
