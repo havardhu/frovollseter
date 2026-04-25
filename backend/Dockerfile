@@ -7,10 +7,8 @@ COPY src/Frovollseter.Infrastructure/Frovollseter.Infrastructure.csproj src/Frov
 COPY src/Frovollseter.Application/Frovollseter.Application.csproj src/Frovollseter.Application/
 COPY src/Frovollseter.Api/Frovollseter.Api.csproj src/Frovollseter.Api/
 
-RUN dotnet restore
-
 COPY . .
-RUN dotnet publish src/Frovollseter.Api/Frovollseter.Api.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish src/Frovollseter.Api/Frovollseter.Api.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
