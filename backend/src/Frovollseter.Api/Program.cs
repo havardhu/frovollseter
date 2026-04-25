@@ -10,9 +10,12 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database
-builder.Services.AddDbContext<FrovollseterDbContext>(opts =>
-    opts.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Database — prefer DATABASE_URL (set by Fly.io postgres attach), fall back to config
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("No database connection string found.");
+
+builder.Services.AddDbContext<FrovollseterDbContext>(opts => opts.UseNpgsql(connectionString));
 
 // Auth services
 builder.Services.AddSingleton<TokenService>();
