@@ -62,6 +62,13 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// Auto-migrate on startup (safe for MVP — idempotent, runs in seconds)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<FrovollseterDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
