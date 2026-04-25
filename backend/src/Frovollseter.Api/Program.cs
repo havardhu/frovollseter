@@ -24,12 +24,13 @@ builder.Services.AddDbContext<FrovollseterDbContext>(opts =>
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<AuthService>();
 
-// Email
-builder.Services.AddHttpClient<ResendEmailService>(http =>
+// Email — register as IEmailService so the typed HttpClient is used correctly
+builder.Services.AddHttpClient<IEmailService, ResendEmailService>(http =>
 {
-    http.DefaultRequestHeaders.Add("Authorization", $"Bearer {builder.Configuration["Resend:ApiKey"]}");
+    var apiKey = builder.Configuration["Resend:ApiKey"]
+        ?? throw new InvalidOperationException("Resend:ApiKey is required");
+    http.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 });
-builder.Services.AddScoped<IEmailService, ResendEmailService>();
 
 // JWT bearer auth
 var jwtSecret = builder.Configuration["Jwt:Secret"]
