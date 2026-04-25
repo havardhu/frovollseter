@@ -1,0 +1,143 @@
+using Frovollseter.Application.Auth;
+using Frovollseter.Domain.Enums;
+using Frovollseter.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace Frovollseter.Api.Endpoints;
+
+public static class AuthEndpoints
+{
+    public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/auth").WithTags("Auth");
+
+        group.MapPost("/invite", InviteUser).RequireAuthorization();
+        group.MapPost("/request-magic-link", RequestMagicLink).AllowAnonymous();
+        group.MapPost("/verify-magic-link", VerifyMagicLink).AllowAnonymous();
+        group.MapPost("/request-otp", RequestOtp).AllowAnonymous();
+        group.MapPost("/verify-otp", VerifyOtp).AllowAnonymous();
+        group.MapPost("/refresh", RefreshToken).AllowAnonymous();
+        group.MapPost("/logout", Logout).AllowAnonymous();
+        group.MapGet("/me", GetMe).RequireAuthorization();
+
+        return app;
+    }
+
+    private static async Task<IResult> InviteUser(
+        [FromBody] InviteRequest req,
+        AuthService authService,
+        HttpContext ctx,
+        CancellationToken ct)
+    {
+        var role = ctx.User.FindFirst("role")?.Value;
+        if (role is not ("admin" or "systemadmin"))
+            return Results.Forbid();
+
+        try
+        {
+            var user = await authService.InviteUserAsync(req.Email, req.DisplayName, req.AssociationId, ct);
+            return Results.Ok(new { user.Id, user.Email, user.DisplayName, user.Status });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(new { error = ex.Message });
+        }
+    }
+
+    private static async Task<IResult> RequestMagicLink(
+        [FromBody] MagicLinkRequest req,
+        AuthService authService,
+        CancellationToken ct)
+    {
+        await authService.RequestMagicLinkAsync(req.Email, ct);
+        return Results.Ok(new { message = "If that email exists, a link has been sent." });
+    }
+
+    private static async Task<IResult> VerifyMagicLink(
+        [FromBody] VerifyTokenRequest req,
+        AuthService authService,
+        HttpContext ctx,
+        CancellationToken ct)
+    {
+        var pair = await authService.VerifyMagicLinkAsync(req.Token, ct);
+        if (pair is null) return Results.Unauthorized();
+
+        SetRefreshCookie(ctx, pair.RefreshToken);
+        return Results.Ok(new { accessToken = pair.AccessToken });
+    }
+
+    private static async Task<IResult> RequestOtp(
+        [FromBody] MagicLinkRequest req,
+        AuthService authService,
+        CancellationToken ct)
+    {
+        await authService.RequestOtpAsync(req.Email, ct);
+        return Results.Ok(new { message = "If that email exists, a code has been sent." });
+    }
+
+    private static async Task<IResult> VerifyOtp(
+        [FromBody] VerifyOtpRequest req,
+        AuthService authService,
+        HttpContext ctx,
+        CancellationToken ct)
+    {
+        var pair = await authService.VerifyOtpAsync(req.Email, req.Code, ct);
+        if (pair is null) return Results.Unauthorized();
+
+        SetRefreshCookie(ctx, pair.RefreshToken);
+        return Results.Ok(new { accessToken = pair.AccessToken });
+    }
+
+    private static IResult RefreshToken(HttpContext ctx, TokenService tokenService, FrovollseterDbContext db)
+    {
+        // Refresh token rotation is a v2 concern for MVP.
+        // For now, return 501 to signal it exists but isn't wired yet.
+        return Results.StatusCode(501);
+    }
+
+    private static IResult Logout(HttpContext ctx)
+    {
+        ctx.Response.Cookies.Delete("refresh_token");
+        return Results.Ok();
+    }
+
+    private static async Task<IResult> GetMe(HttpContext ctx, FrovollseterDbContext db, CancellationToken ct)
+    {
+        if (!Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var userId))
+            return Results.Unauthorized();
+
+        var user = await db.Users
+            .Include(u => u.Association)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+
+        if (user is null) return Results.NotFound();
+
+        return Results.Ok(new
+        {
+            user.Id,
+            user.Email,
+            user.DisplayName,
+            user.Role,
+            user.Status,
+            Association = new { user.Association.Id, user.Association.Name, user.Association.Type }
+        });
+    }
+
+    private static void SetRefreshCookie(HttpContext ctx, string refreshToken)
+    {
+        ctx.Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddDays(7),
+            Path = "/api/auth/refresh"
+        });
+    }
+
+    private record InviteRequest(string Email, string DisplayName, Guid AssociationId);
+    private record MagicLinkRequest(string Email);
+    private record VerifyTokenRequest(string Token);
+    private record VerifyOtpRequest(string Email, string Code);
+}

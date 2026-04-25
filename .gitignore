@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+appsettings.Production.json
+appsettings.*.local.json
+
+# Node
+node_modules/
+dist/
+.env
+.env.local
+
+# Rider / VS Code
+.idea/
+.vscode/
+*.DotSettings
+
+# Misc
+.DS_Store
+Thumbs.db
