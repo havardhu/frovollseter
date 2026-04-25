@@ -11,10 +11,11 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Database — prefer DATABASE_URL (set by Fly.io postgres attach), fall back to config
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+var rawConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("No database connection string found.");
 
+var connectionString = ConvertDatabaseUrl(rawConnectionString);
 builder.Services.AddDbContext<FrovollseterDbContext>(opts => opts.UseNpgsql(connectionString));
 
 // Auth services
@@ -95,3 +96,26 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTimeOffset
     .AllowAnonymous();
 
 app.Run();
+
+// Converts postgres://user:pass@host:port/db?sslmode=x to Npgsql key=value format
+static string ConvertDatabaseUrl(string url)
+{
+    if (!url.StartsWith("postgres://") && !url.StartsWith("postgresql://"))
+        return url;
+
+    var uri = new Uri(url);
+    var userInfo = uri.UserInfo.Split(':', 2);
+    var sb = new System.Text.StringBuilder();
+    sb.Append($"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};");
+    sb.Append($"Username={userInfo[0]};Password={userInfo[1]};");
+
+    var query = uri.Query.TrimStart('?');
+    foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var kv = part.Split('=', 2);
+        if (kv.Length == 2 && kv[0] == "sslmode")
+            sb.Append($"SSL Mode={kv[1]};");
+    }
+
+    return sb.ToString();
+}
