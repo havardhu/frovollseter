@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Frovollseter.Api.Endpoints;
 using Frovollseter.Application.Auth;
 using Frovollseter.Infrastructure.Email;
@@ -66,6 +67,10 @@ builder.Services.AddCors(opts => opts.AddDefaultPolicy(p =>
         .AllowAnyHeader()
         .AllowCredentials()));
 
+// JSON — serialize enums as strings
+builder.Services.ConfigureHttpJsonOptions(opts =>
+    opts.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 // OpenAPI
 builder.Services.AddOpenApi();
 
@@ -100,6 +105,7 @@ app.MapRoadReportEndpoints();
 app.MapNewsEndpoints();
 app.MapLinksEndpoints();
 app.MapWebcamEndpoints();
+app.MapAdminEndpoints();
 
 // Health check
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTimeOffset.UtcNow }))

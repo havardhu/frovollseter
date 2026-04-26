@@ -34,10 +34,30 @@ public static class AuthEndpoints
         if (role is not ("admin" or "systemadmin"))
             return Results.Forbid();
 
+        Guid associationId;
+        if (role == "systemadmin")
+        {
+            if (req.AssociationId is null)
+                return Results.BadRequest(new { error = "AssociationId er påkrevd for SystemAdmin." });
+            associationId = req.AssociationId.Value;
+        }
+        else
+        {
+            if (!Guid.TryParse(ctx.User.FindFirst("assoc")?.Value, out associationId))
+                return Results.Unauthorized();
+        }
+
+        var inviteRole = UserRole.Member;
+        if (req.Role is not null)
+        {
+            if (!Enum.TryParse<UserRole>(req.Role, ignoreCase: true, out inviteRole) || inviteRole == UserRole.SystemAdmin)
+                return Results.BadRequest(new { error = "Ugyldig rolle. Tillatte verdier: Member, Admin." });
+        }
+
         try
         {
-            var user = await authService.InviteUserAsync(req.Email, req.DisplayName, req.AssociationId, ct);
-            return Results.Ok(new { user.Id, user.Email, user.DisplayName, user.Status });
+            var user = await authService.InviteUserAsync(req.Email, req.DisplayName, associationId, inviteRole, ct);
+            return Results.Ok(new { user.Id, user.Email, user.DisplayName, user.Role, user.Status });
         }
         catch (InvalidOperationException ex)
         {
@@ -136,7 +156,7 @@ public static class AuthEndpoints
         });
     }
 
-    private record InviteRequest(string Email, string DisplayName, Guid AssociationId);
+    private record InviteRequest(string Email, string DisplayName, Guid? AssociationId, string? Role);
     private record MagicLinkRequest(string Email);
     private record VerifyTokenRequest(string Token);
     private record VerifyOtpRequest(string Email, string Code);

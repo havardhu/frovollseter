@@ -25,7 +25,7 @@ public class AuthService(
     private static string GenerateOtp() =>
         RandomNumberGenerator.GetInt32(100_000, 1_000_000).ToString();
 
-    public async Task<User> InviteUserAsync(string emailAddress, string displayName, Guid associationId, CancellationToken ct)
+    public async Task<User> InviteUserAsync(string emailAddress, string displayName, Guid associationId, UserRole role, CancellationToken ct)
     {
         var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == emailAddress, ct);
         if (existing is not null)
@@ -38,7 +38,7 @@ public class AuthService(
             DisplayName = displayName,
             AssociationId = associationId,
             Status = UserStatus.Pending,
-            Role = UserRole.Member,
+            Role = role,
             CreatedAt = DateTimeOffset.UtcNow
         };
         db.Users.Add(user);

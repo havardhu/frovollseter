@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle, Droplets, HelpCircle, Lock, Plus, RefreshCw, Truck, XCircle, type LucideIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle, Droplets, HelpCircle, Lock, Pencil, Plus, RefreshCw, ThumbsUp, Trash2, Truck, XCircle, type LucideIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
 import { api } from "@/api/client";
@@ -28,6 +28,7 @@ export function RoadReportPage() {
   const [reports, setReports] = useState<RoadReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -39,14 +40,7 @@ export function RoadReportPage() {
     }
   };
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  const handleReported = () => {
-    setShowForm(false);
-    load();
-  };
+  useEffect(() => { load(); }, []);
 
   return (
     <div className="space-y-6">
@@ -59,7 +53,7 @@ export function RoadReportPage() {
           <Button variant="outline" size="icon" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
-          {isAuthenticated && (
+          {isAuthenticated && !showForm && !editingId && (
             <Button onClick={() => setShowForm(true)}>
               <Plus className="h-4 w-4 mr-1" /> Rapporter
             </Button>
@@ -68,7 +62,7 @@ export function RoadReportPage() {
       </div>
 
       {showForm && (
-        <ReportForm onSubmitted={handleReported} onCancel={() => setShowForm(false)} />
+        <ReportForm onSubmitted={() => { setShowForm(false); load(); }} onCancel={() => setShowForm(false)} />
       )}
 
       {loading && reports.length === 0 ? (
@@ -87,7 +81,14 @@ export function RoadReportPage() {
       ) : (
         <div className="space-y-3">
           {reports.map((report) => (
-            <RoadReportCard key={report.id} report={report} />
+            <RoadReportCard
+              key={report.id}
+              report={report}
+              isEditing={editingId === report.id}
+              onEditStart={() => { setShowForm(false); setEditingId(report.id); }}
+              onEditEnd={() => setEditingId(null)}
+              onChanged={() => { setEditingId(null); load(); }}
+            />
           ))}
         </div>
       )}
@@ -95,9 +96,60 @@ export function RoadReportPage() {
   );
 }
 
-function RoadReportCard({ report }: { report: RoadReport }) {
+function RoadReportCard({
+  report,
+  isEditing,
+  onEditStart,
+  onEditEnd,
+  onChanged,
+}: {
+  report: RoadReport;
+  isEditing: boolean;
+  onEditStart: () => void;
+  onEditEnd: () => void;
+  onChanged: () => void;
+}) {
+  const { isAuthenticated, user } = useAuth();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const config = STATUS_CONFIG[report.status] ?? STATUS_CONFIG.Unknown;
-  const timeAgo = formatDistanceToNow(new Date(report.createdAt), { addSuffix: true, locale: nb });
+  const isOwner = user?.id === report.reportedBy.id;
+
+  const timeAgo = (iso: string) =>
+    formatDistanceToNow(new Date(iso), { addSuffix: true, locale: nb });
+
+  const handleConfirm = async () => {
+    setConfirming(true);
+    try {
+      await api.post(`/road-reports/${report.id}/confirm`);
+      onChanged();
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Slett denne rapporten?")) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/road-reports/${report.id}`);
+      onChanged();
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <ReportForm
+        key={report.id}
+        report={report}
+        onSubmitted={onChanged}
+        onCancel={onEditEnd}
+      />
+    );
+  }
 
   return (
     <Card className={report.isStale ? "opacity-60" : undefined}>
@@ -119,16 +171,59 @@ function RoadReportCard({ report }: { report: RoadReport }) {
               )}
             </div>
           </div>
-          <p className="text-xs text-muted-foreground shrink-0">{timeAgo}</p>
+          <p className="text-xs text-muted-foreground shrink-0">{timeAgo(report.confirmedAt ?? report.createdAt)}</p>
         </div>
       </CardHeader>
+
       {report.description && (
         <CardContent className="pt-0">
           <p className="text-sm text-muted-foreground">{report.description}</p>
         </CardContent>
       )}
-      <div className="px-6 pb-3">
-        <p className="text-xs text-muted-foreground">Rapportert av {report.reportedBy.displayName}</p>
+
+      <div className="px-4 pb-3 flex items-center justify-between gap-2">
+        <div className="text-xs text-muted-foreground">
+          <span>Rapportert av {report.reportedBy.displayName}</span>
+          {report.confirmedBy && (
+            <span className="ml-2">· Bekreftet av {report.confirmedBy.displayName}</span>
+          )}
+        </div>
+
+        {isAuthenticated && (
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-muted-foreground"
+              onClick={handleConfirm}
+              disabled={confirming}
+            >
+              <ThumbsUp className="h-3 w-3 mr-1" />
+              Bekreft
+            </Button>
+            {isOwner && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground"
+                  onClick={onEditStart}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );

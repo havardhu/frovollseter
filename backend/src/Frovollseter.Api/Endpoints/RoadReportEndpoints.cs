@@ -16,6 +16,8 @@ public static class RoadReportEndpoints
         group.MapGet("/history", GetHistory).AllowAnonymous();
         group.MapGet("/{id:guid}", GetById).AllowAnonymous();
         group.MapPost("/", Create).RequireAuthorization();
+        group.MapPut("/{id:guid}", Edit).RequireAuthorization();
+        group.MapPost("/{id:guid}/confirm", Confirm).RequireAuthorization();
         group.MapDelete("/{id:guid}", Delete).RequireAuthorization();
 
         return app;
@@ -23,9 +25,9 @@ public static class RoadReportEndpoints
 
     private static async Task<IResult> GetLatest(FrovollseterDbContext db, CancellationToken ct)
     {
-        // Return the most recent report per road segment
         var reports = await db.RoadReports
             .Include(r => r.ReportedBy)
+            .Include(r => r.ConfirmedBy)
             .OrderByDescending(r => r.CreatedAt)
             .Take(20)
             .Select(r => MapToDto(r))
@@ -44,6 +46,7 @@ public static class RoadReportEndpoints
         var total = await db.RoadReports.CountAsync(ct);
         var items = await db.RoadReports
             .Include(r => r.ReportedBy)
+            .Include(r => r.ConfirmedBy)
             .OrderByDescending(r => r.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -55,7 +58,10 @@ public static class RoadReportEndpoints
 
     private static async Task<IResult> GetById(Guid id, FrovollseterDbContext db, CancellationToken ct)
     {
-        var report = await db.RoadReports.Include(r => r.ReportedBy).FirstOrDefaultAsync(r => r.Id == id, ct);
+        var report = await db.RoadReports
+            .Include(r => r.ReportedBy)
+            .Include(r => r.ConfirmedBy)
+            .FirstOrDefaultAsync(r => r.Id == id, ct);
         return report is null ? Results.NotFound() : Results.Ok(MapToDto(report));
     }
 
@@ -86,18 +92,87 @@ public static class RoadReportEndpoints
         db.RoadReports.Add(report);
         await db.SaveChangesAsync(ct);
 
-        var saved = await db.RoadReports.Include(r => r.ReportedBy).FirstAsync(r => r.Id == report.Id, ct);
+        var saved = await db.RoadReports
+            .Include(r => r.ReportedBy)
+            .Include(r => r.ConfirmedBy)
+            .FirstAsync(r => r.Id == report.Id, ct);
         return Results.Created($"/api/road-reports/{report.Id}", MapToDto(saved));
+    }
+
+    private static async Task<IResult> Edit(
+        Guid id,
+        [FromBody] CreateRoadReportRequest req,
+        HttpContext ctx,
+        FrovollseterDbContext db,
+        CancellationToken ct)
+    {
+        if (!Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var userId))
+            return Results.Unauthorized();
+
+        var report = await db.RoadReports
+            .Include(r => r.ReportedBy)
+            .Include(r => r.ConfirmedBy)
+            .FirstOrDefaultAsync(r => r.Id == id, ct);
+
+        if (report is null) return Results.NotFound();
+        if (report.ReportedById != userId) return Results.Forbid();
+
+        if (!Enum.TryParse<RoadStatus>(req.Status, ignoreCase: true, out var status))
+            return Results.BadRequest(new { error = "Invalid road status value." });
+
+        report.Status = status;
+        report.Description = req.Description;
+        report.RoadSegment = req.RoadSegment;
+        report.ValidUntil = req.ValidUntil;
+        report.ConfirmedById = null;
+        report.ConfirmedAt = null;
+        report.ConfirmedBy = null;
+        report.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+        return Results.Ok(MapToDto(report));
+    }
+
+    private static async Task<IResult> Confirm(
+        Guid id,
+        HttpContext ctx,
+        FrovollseterDbContext db,
+        CancellationToken ct)
+    {
+        if (!Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var userId))
+            return Results.Unauthorized();
+
+        var report = await db.RoadReports
+            .Include(r => r.ReportedBy)
+            .Include(r => r.ConfirmedBy)
+            .FirstOrDefaultAsync(r => r.Id == id, ct);
+
+        if (report is null) return Results.NotFound();
+
+        report.ConfirmedById = userId;
+        report.ConfirmedAt = DateTimeOffset.UtcNow;
+        report.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+
+        // Reload to get updated ConfirmedBy navigation
+        await db.Entry(report).Reference(r => r.ConfirmedBy).LoadAsync(ct);
+        return Results.Ok(MapToDto(report));
     }
 
     private static async Task<IResult> Delete(Guid id, HttpContext ctx, FrovollseterDbContext db, CancellationToken ct)
     {
-        var role = ctx.User.FindFirst("role")?.Value;
-        if (role is not ("admin" or "systemadmin"))
-            return Results.Forbid();
+        if (!Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var userId))
+            return Results.Unauthorized();
 
         var report = await db.RoadReports.FindAsync([id], ct);
         if (report is null) return Results.NotFound();
+
+        var role = ctx.User.FindFirst("role")?.Value;
+        var isAdmin = role is "admin" or "systemadmin";
+        var isOwner = report.ReportedById == userId;
+
+        if (!isAdmin && !isOwner) return Results.Forbid();
 
         db.RoadReports.Remove(report);
         await db.SaveChangesAsync(ct);
@@ -112,8 +187,10 @@ public static class RoadReportEndpoints
         r.RoadSegment,
         r.ValidUntil,
         r.CreatedAt,
+        r.ConfirmedAt,
         IsStale = r.IsStale,
-        ReportedBy = new { r.ReportedBy.Id, r.ReportedBy.DisplayName }
+        ReportedBy = new { r.ReportedBy.Id, r.ReportedBy.DisplayName },
+        ConfirmedBy = r.ConfirmedBy is null ? null : new { r.ConfirmedBy.Id, r.ConfirmedBy.DisplayName }
     };
 
     private record CreateRoadReportRequest(

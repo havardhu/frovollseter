@@ -8,6 +8,7 @@ import { RoadReportPage } from "@/features/road-reports/RoadReportPage";
 import { NewsPage } from "@/features/news/NewsPage";
 import { WebcamsPage } from "@/features/webcams/WebcamsPage";
 import { LinksPage } from "@/features/links/LinksPage";
+import { AdminPage } from "@/features/admin/AdminPage";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="/nyheter" element={<NewsPage />} />
             <Route path="/webkameraer" element={<WebcamsPage />} />
             <Route path="/lenker" element={<LinksPage />} />
+            <Route path="/admin" element={<AdminPage />} />
           </Route>
         </Routes>
         <Toaster position="bottom-right" richColors />

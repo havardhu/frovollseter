@@ -55,6 +55,10 @@ public class FrovollseterDbContext(DbContextOptions<FrovollseterDbContext> optio
             e.Property(x => x.RoadSegment).HasMaxLength(200);
             e.HasOne(x => x.ReportedBy).WithMany(u => u.RoadReports)
                 .HasForeignKey(x => x.ReportedById);
+            e.HasOne(x => x.ConfirmedBy).WithMany()
+                .HasForeignKey(x => x.ConfirmedById)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<WebcamStream>(e =>

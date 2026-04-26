@@ -29,8 +29,10 @@ export interface RoadReport {
   roadSegment: string | null;
   validUntil: string | null;
   createdAt: string;
+  confirmedAt: string | null;
   isStale: boolean;
   reportedBy: { id: string; displayName: string };
+  confirmedBy: { id: string; displayName: string } | null;
 }
 
 export interface NewsPost {
@@ -63,4 +65,23 @@ export interface UsefulLink {
   description: string | null;
   category: string | null;
   sortOrder: number;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  displayName: string;
+  phone?: string;
+  role: "Member" | "Admin" | "SystemAdmin";
+  status: "Pending" | "Active" | "Suspended";
+  createdAt: string;
+  lastLoginAt: string | null;
+  association: { id: string; name: string } | null;
+}
+
+export interface AdminAssociation {
+  id: string;
+  name: string;
+  type: "Hytteeierlag" | "Veglag" | "Grunneier";
+  memberCount: number;
 }

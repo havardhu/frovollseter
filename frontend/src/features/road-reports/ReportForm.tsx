@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle, Droplets, Lock, Truck, XCircle, type LucideIcon } from "lucide-react";
 import { api } from "@/api/client";
+import type { RoadReport } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,16 +17,25 @@ const STATUS_OPTIONS: { value: string; label: string; Icon: LucideIcon }[] = [
 ];
 
 interface Props {
+  report?: RoadReport;
   onSubmitted: () => void;
   onCancel: () => void;
 }
 
-export function ReportForm({ onSubmitted, onCancel }: Props) {
-  const [status, setStatus] = useState("");
-  const [description, setDescription] = useState("");
-  const [roadSegment, setRoadSegment] = useState("");
+export function ReportForm({ report, onSubmitted, onCancel }: Props) {
+  const [status, setStatus] = useState(report?.status ?? "");
+  const [description, setDescription] = useState(report?.description ?? "");
+  const [roadSegment, setRoadSegment] = useState(report?.roadSegment ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const isEdit = !!report;
+
+  useEffect(() => {
+    setStatus(report?.status ?? "");
+    setDescription(report?.description ?? "");
+    setRoadSegment(report?.roadSegment ?? "");
+  }, [report?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,12 +43,12 @@ export function ReportForm({ onSubmitted, onCancel }: Props) {
     setError("");
     setLoading(true);
     try {
-      await api.post("/road-reports", {
-        status,
-        description: description || null,
-        roadSegment: roadSegment || null,
-        validUntil: null,
-      });
+      const body = { status, description: description || null, roadSegment: roadSegment || null, validUntil: null };
+      if (isEdit) {
+        await api.put(`/road-reports/${report.id}`, body);
+      } else {
+        await api.post("/road-reports", body);
+      }
       onSubmitted();
     } catch {
       setError("Kunne ikke sende rapport. Prøv igjen.");
@@ -50,7 +60,7 @@ export function ReportForm({ onSubmitted, onCancel }: Props) {
   return (
     <Card className="border-primary/30">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Rapporter veiforhold</CardTitle>
+        <CardTitle className="text-base">{isEdit ? "Rediger veiforhold" : "Rapporter veiforhold"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -99,7 +109,7 @@ export function ReportForm({ onSubmitted, onCancel }: Props) {
 
           <div className="flex gap-2">
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? "Sender…" : "Send rapport"}
+              {loading ? "Lagrer…" : isEdit ? "Lagre endringer" : "Send rapport"}
             </Button>
             <Button type="button" variant="outline" onClick={onCancel}>
               Avbryt

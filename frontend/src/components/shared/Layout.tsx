@@ -57,6 +57,20 @@ export function Layout() {
                 {item.label}
               </NavLink>
             ))}
+            {(user?.role === "Admin" || user?.role === "SystemAdmin") && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    isActive
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`
+                }
+              >
+                Admin
+              </NavLink>
+            )}
           </nav>
 
           <div className="flex items-center gap-1">
@@ -110,6 +124,21 @@ export function Layout() {
                 {item.label}
               </NavLink>
             ))}
+            {(user?.role === "Admin" || user?.role === "SystemAdmin") && (
+              <NavLink
+                to="/admin"
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) =>
+                  `block px-3 py-2 rounded-md text-sm transition-colors ${
+                    isActive
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`
+                }
+              >
+                Admin
+              </NavLink>
+            )}
           </div>
         )}
       </header>

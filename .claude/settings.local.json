@@ -8,7 +8,16 @@
       "Bash(git commit -m 'Add JWT auth failure logging to diagnose /me 401 *)",
       "Bash(git commit -m 'Add frontend logging to diagnose missing Authorization header *)",
       "Bash(git commit -m 'Add request-level accessToken logging in client.ts *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(podman ps *)",
+      "Bash(psql \"Host=localhost;Database=frovollseter;Username=postgres;Password=postgres\" -c \"SELECT 1\")",
+      "Bash(psql \"postgresql://postgres:postgres@localhost/frovollseter\" -c \"SELECT 1\")",
+      "PowerShell(Get-Command psql -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command podman -ErrorAction SilentlyContinue)",
+      "Bash(npx --yes serve . --listen 3333)",
+      "Bash(dotnet ef *)",
+      "Bash(npx tsc *)",
+      "Bash(dotnet build *)"
     ]
   }
 }

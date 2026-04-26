@@ -13,7 +13,11 @@ public class RoadReport
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
+    public Guid? ConfirmedById { get; set; }
+    public DateTimeOffset? ConfirmedAt { get; set; }
+
     public User ReportedBy { get; set; } = null!;
+    public User? ConfirmedBy { get; set; }
 
     public bool IsStale => ValidUntil.HasValue && DateTimeOffset.UtcNow > ValidUntil;
 }
