@@ -11,6 +11,9 @@ namespace Frovollseter.Application.Auth;
 
 public record MagicLinkVerifyResult(TokenPair Tokens, bool RememberMe);
 
+public record MassInviteCreated(MassInvite Invite, string RawToken);
+public record MassInviteRedeemResult(User User, TokenPair Tokens);
+
 public class AuthService(
     FrovollseterDbContext db,
     IEmailService email,
@@ -166,5 +169,112 @@ public class AuthService(
         await db.SaveChangesAsync(ct);
 
         return tokenService.Issue(user);
+    }
+
+    public async Task<MassInviteCreated> CreateMassInviteAsync(
+        Guid associationId,
+        Guid createdById,
+        DateTimeOffset expiresAt,
+        string? note,
+        CancellationToken ct)
+    {
+        if (expiresAt <= DateTimeOffset.UtcNow)
+            throw new InvalidOperationException("Utløpsdato må være i fremtiden.");
+
+        var rawToken = GenerateSecureToken();
+        var invite = new MassInvite
+        {
+            Id = Guid.NewGuid(),
+            TokenHash = HashToken(rawToken),
+            AssociationId = associationId,
+            CreatedById = createdById,
+            Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
+            ExpiresAt = expiresAt,
+            CreatedAt = DateTimeOffset.UtcNow,
+            RedemptionCount = 0
+        };
+        db.MassInvites.Add(invite);
+        await db.SaveChangesAsync(ct);
+
+        // Re-load with association so callers can show it in the response without an extra round-trip.
+        await db.Entry(invite).Reference(i => i.Association).LoadAsync(ct);
+
+        return new MassInviteCreated(invite, rawToken);
+    }
+
+    public async Task<MassInvite?> GetMassInviteByTokenAsync(string rawToken, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(rawToken)) return null;
+        var hash = HashToken(rawToken);
+        return await db.MassInvites
+            .Include(i => i.Association)
+            .FirstOrDefaultAsync(i => i.TokenHash == hash, ct);
+    }
+
+    public async Task<MassInviteRedeemResult?> RedeemMassInviteAsync(
+        string rawToken,
+        string emailAddress,
+        string displayName,
+        CancellationToken ct)
+    {
+        var invite = await GetMassInviteByTokenAsync(rawToken, ct);
+        if (invite is null || !invite.IsValid) return null;
+
+        var normalisedEmail = emailAddress.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(normalisedEmail) || !normalisedEmail.Contains('@'))
+            throw new InvalidOperationException("Ugyldig e-postadresse.");
+
+        var trimmedName = displayName?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(trimmedName))
+            throw new InvalidOperationException("Navn er påkrevd.");
+
+        var emailTaken = await db.Users.AnyAsync(u => u.Email == normalisedEmail, ct);
+        if (emailTaken)
+            throw new InvalidOperationException("E-postadressen er allerede i bruk.");
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = normalisedEmail,
+            DisplayName = trimmedName,
+            AssociationId = invite.AssociationId,
+            Status = UserStatus.Active,
+            Role = UserRole.Member,
+            CreatedAt = DateTimeOffset.UtcNow,
+            LastLoginAt = DateTimeOffset.UtcNow
+        };
+        db.Users.Add(user);
+
+        invite.RedemptionCount += 1;
+        await db.SaveChangesAsync(ct);
+
+        // Reload association so the JWT/claims have correct context (Issue only reads ids, but be safe).
+        await db.Entry(user).Reference(u => u.Association).LoadAsync(ct);
+
+        var pair = tokenService.Issue(user);
+        return new MassInviteRedeemResult(user, pair);
+    }
+
+    public async Task<List<MassInvite>> ListMassInvitesAsync(Guid? filterAssociationId, CancellationToken ct)
+    {
+        var query = db.MassInvites
+            .Include(i => i.Association)
+            .Include(i => i.CreatedBy)
+            .AsQueryable();
+        if (filterAssociationId is not null)
+            query = query.Where(i => i.AssociationId == filterAssociationId.Value);
+        return await query.OrderByDescending(i => i.CreatedAt).ToListAsync(ct);
+    }
+
+    public async Task<MassInvite?> GetMassInviteByIdAsync(Guid id, CancellationToken ct) =>
+        await db.MassInvites.FirstOrDefaultAsync(i => i.Id == id, ct);
+
+    public async Task<bool> DeleteMassInviteAsync(Guid id, CancellationToken ct)
+    {
+        var invite = await db.MassInvites.FirstOrDefaultAsync(i => i.Id == id, ct);
+        if (invite is null) return false;
+        db.MassInvites.Remove(invite);
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 }

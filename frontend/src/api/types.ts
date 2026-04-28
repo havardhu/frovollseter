@@ -99,3 +99,28 @@ export interface AdminAssociation {
   type: "Hytteeierlag" | "Veglag" | "Grunneier";
   memberCount: number;
 }
+
+export interface MassInvite {
+  id: string;
+  expiresAt: string;
+  createdAt: string;
+  redemptionCount: number;
+  note: string | null;
+  isExpired: boolean;
+  association: { id: string; name: string };
+  createdBy: { id: string; displayName: string };
+}
+
+export interface MassInviteCreated extends MassInvite {
+  token: string;
+  url: string;
+}
+
+export interface MassInviteLookup {
+  expiresAt: string;
+  association: {
+    id: string;
+    name: string;
+    type: "Hytteeierlag" | "Veglag" | "Grunneier";
+  };
+}

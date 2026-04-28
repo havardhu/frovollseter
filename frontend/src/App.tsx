@@ -4,6 +4,7 @@ import { AuthProvider } from "@/features/auth/AuthContext";
 import { Layout } from "@/components/shared/Layout";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { VerifyPage } from "@/features/auth/VerifyPage";
+import { JoinPage } from "@/features/auth/JoinPage";
 import { RoadReportPage } from "@/features/road-reports/RoadReportPage";
 import { NewsPage } from "@/features/news/NewsPage";
 import { WebcamsPage } from "@/features/webcams/WebcamsPage";
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/verify" element={<VerifyPage />} />
           <Route path="/auth/accept" element={<VerifyPage />} />
+          <Route path="/auth/join/:token" element={<JoinPage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<RoadReportPage />} />
             <Route path="/nyheter" element={<NewsPage />} />

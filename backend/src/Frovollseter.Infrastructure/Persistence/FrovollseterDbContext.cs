@@ -13,6 +13,7 @@ public class FrovollseterDbContext(DbContextOptions<FrovollseterDbContext> optio
     public DbSet<WebcamStream> WebcamStreams => Set<WebcamStream>();
     public DbSet<NewsPost> NewsPosts => Set<NewsPost>();
     public DbSet<UsefulLink> UsefulLinks => Set<UsefulLink>();
+    public DbSet<MassInvite> MassInvites => Set<MassInvite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -91,6 +92,20 @@ public class FrovollseterDbContext(DbContextOptions<FrovollseterDbContext> optio
             e.Property(x => x.Category).HasMaxLength(100);
             e.HasOne(x => x.CreatedBy).WithMany()
                 .HasForeignKey(x => x.CreatedById);
+        });
+
+        modelBuilder.Entity<MassInvite>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.TokenHash).IsUnique();
+            e.Property(x => x.TokenHash).IsRequired().HasMaxLength(64);
+            e.Property(x => x.Note).HasMaxLength(200);
+            e.HasOne(x => x.Association).WithMany()
+                .HasForeignKey(x => x.AssociationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.CreatedBy).WithMany()
+                .HasForeignKey(x => x.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

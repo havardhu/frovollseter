@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AdminUser, AdminAssociation, CurrentUser } from "@/api/types";
 import { adminApi } from "./adminApi";
-import { InviteForm } from "./InviteForm";
 
 interface Props {
   users: AdminUser[];
@@ -15,6 +14,26 @@ interface Props {
   associations: AdminAssociation[];
   onUsersChanged: (users: AdminUser[]) => void;
 }
+
+const ROLE_FILTERS: { value: string; label: string }[] = [
+  { value: "all", label: "Alle roller" },
+  { value: "Member", label: "Member" },
+  { value: "Admin", label: "Admin" },
+  { value: "SystemAdmin", label: "SystemAdmin" },
+];
+
+// Default filter hides suspended users; admins can opt back in.
+const STATUS_FILTERS: { value: string; label: string }[] = [
+  { value: "active-and-pending", label: "Aktive (skjul suspenderte)" },
+  { value: "all", label: "Alle" },
+  { value: "Active", label: "Active" },
+  { value: "Pending", label: "Pending" },
+  { value: "Suspended", label: "Suspended" },
+];
+
+const DEFAULT_ROLE_FILTER = "all";
+const DEFAULT_STATUS_FILTER = "active-and-pending";
+const DEFAULT_ASSOCIATION_FILTER = "all";
 
 function canManage(callerId: string, callerRole: string, target: AdminUser): boolean {
   if (callerId === target.id) return false;
@@ -39,9 +58,55 @@ export function UsersTab({ users, currentUser, associations, onUsersChanged }: P
   const [editDraft, setEditDraft] = useState({ displayName: "", phone: "", email: "", associationId: "" });
   const [editLoading, setEditLoading] = useState(false);
 
-  const handleUserInvited = (user: AdminUser) => {
-    onUsersChanged([...users, user]);
-  };
+  const [roleFilter, setRoleFilter] = useState<string>(DEFAULT_ROLE_FILTER);
+  const [statusFilter, setStatusFilter] = useState<string>(DEFAULT_STATUS_FILTER);
+  const [associationFilter, setAssociationFilter] = useState<string>(DEFAULT_ASSOCIATION_FILTER);
+
+  const isSystemAdmin = currentUser.role === "SystemAdmin";
+
+  // Build the association options from the users actually present, falling back to the full
+  // associations list for SystemAdmins (so they can pre-pick an association even if it's empty).
+  const associationOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const u of users) {
+      if (u.association && !seen.has(u.association.id)) {
+        seen.set(u.association.id, u.association.name);
+      }
+    }
+    if (isSystemAdmin) {
+      for (const a of associations) {
+        if (!seen.has(a.id)) seen.set(a.id, a.name);
+      }
+    }
+    return Array.from(seen, ([id, name]) => ({ id, name })).sort((a, b) =>
+      a.name.localeCompare(b.name, "nb-NO"),
+    );
+  }, [users, associations, isSystemAdmin]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (statusFilter === "active-and-pending") {
+        if (u.status === "Suspended") return false;
+      } else if (statusFilter !== "all") {
+        if (u.status !== statusFilter) return false;
+      }
+      if (associationFilter !== "all") {
+        if (associationFilter === "none") {
+          if (u.association) return false;
+        } else if (u.association?.id !== associationFilter) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [users, roleFilter, statusFilter, associationFilter]);
+
+  const filtersActive =
+    roleFilter !== DEFAULT_ROLE_FILTER ||
+    statusFilter !== DEFAULT_STATUS_FILTER ||
+    associationFilter !== DEFAULT_ASSOCIATION_FILTER;
+  const showAssociationFilter = isSystemAdmin || associationOptions.length > 1;
 
   const startEdit = (user: AdminUser) => {
     setEditDraft({
@@ -104,19 +169,96 @@ export function UsersTab({ users, currentUser, associations, onUsersChanged }: P
     }
   };
 
+  const filterSelectClass =
+    "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+
   return (
     <div className="flex flex-col gap-4">
-      <InviteForm
-        currentUserRole={currentUser.role}
-        associations={associations}
-        onUserInvited={handleUserInvited}
-      />
+      <Card>
+        <CardContent className="flex flex-col gap-3 pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="filter-role">Rolle</Label>
+              <select
+                id="filter-role"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className={filterSelectClass}
+              >
+                {ROLE_FILTERS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="filter-status">Status</Label>
+              <select
+                id="filter-status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className={filterSelectClass}
+              >
+                {STATUS_FILTERS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {showAssociationFilter && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="filter-assoc">Forening</Label>
+                <select
+                  id="filter-assoc"
+                  value={associationFilter}
+                  onChange={(e) => setAssociationFilter(e.target.value)}
+                  className={filterSelectClass}
+                >
+                  <option value="all">Alle foreninger</option>
+                  <option value="none">Uten forening</option>
+                  {associationOptions.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+            <span>
+              Viser {filteredUsers.length} av {users.length}{" "}
+              {users.length === 1 ? "bruker" : "brukere"}
+            </span>
+            {filtersActive && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setRoleFilter(DEFAULT_ROLE_FILTER);
+                  setStatusFilter(DEFAULT_STATUS_FILTER);
+                  setAssociationFilter(DEFAULT_ASSOCIATION_FILTER);
+                }}
+              >
+                Nullstill filter
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex flex-col gap-2">
-        {users.length === 0 && (
+        {users.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">Ingen brukere funnet.</p>
-        )}
-        {users.map((user) => {
+        ) : filteredUsers.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Ingen brukere matcher filteret.
+          </p>
+        ) : null}
+        {filteredUsers.map((user) => {
           const manageable = canManage(currentUser.id, currentUser.role, user);
           const isEditing = editingUserId === user.id;
 
@@ -160,7 +302,7 @@ export function UsersTab({ users, currentUser, associations, onUsersChanged }: P
                               id={`edit-assoc-${user.id}`}
                               value={editDraft.associationId}
                               onChange={(e) => setEditDraft((d) => ({ ...d, associationId: e.target.value }))}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              className={filterSelectClass}
                             >
                               <option value="">Ingen forening</option>
                               {associations.map((a) => (

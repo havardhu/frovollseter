@@ -4,9 +4,10 @@ import { useAuth } from "@/features/auth/AuthContext";
 import type { AdminUser, AdminAssociation } from "@/api/types";
 import { adminApi } from "./adminApi";
 import { UsersTab } from "./UsersTab";
+import { InvitesTab } from "./InvitesTab";
 import { AssociationsTab } from "./AssociationsTab";
 
-type Tab = "users" | "associations";
+type Tab = "users" | "invites" | "associations";
 
 export function AdminPage() {
   const { isAuthenticated, user } = useAuth();
@@ -63,6 +64,9 @@ export function AdminPage() {
         <button className={tabClass(tab === "users")} onClick={() => setTab("users")}>
           Brukere
         </button>
+        <button className={tabClass(tab === "invites")} onClick={() => setTab("invites")}>
+          Invitasjoner
+        </button>
         {isSystemAdmin && (
           <button className={tabClass(tab === "associations")} onClick={() => setTab("associations")}>
             Foreninger
@@ -80,6 +84,13 @@ export function AdminPage() {
               currentUser={user}
               associations={associations}
               onUsersChanged={setUsers}
+            />
+          )}
+          {tab === "invites" && (
+            <InvitesTab
+              currentUser={user}
+              associations={associations}
+              onUserInvited={(invited) => setUsers((prev) => [...prev, invited])}
             />
           )}
           {tab === "associations" && isSystemAdmin && (

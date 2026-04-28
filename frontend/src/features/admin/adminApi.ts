@@ -1,5 +1,5 @@
 import { api } from "@/api/client";
-import type { AdminUser, AdminAssociation } from "@/api/types";
+import type { AdminUser, AdminAssociation, MassInvite, MassInviteCreated } from "@/api/types";
 
 export const adminApi = {
   listUsers: () => api.get<AdminUser[]>("/admin/users"),
@@ -18,4 +18,8 @@ export const adminApi = {
     api.patch<AdminAssociation>(`/admin/associations/${id}`, data),
   inviteUser: (email: string, displayName: string, associationId?: string, role?: string) =>
     api.post<AdminUser>("/auth/invite", { email, displayName, associationId, role }),
+  listMassInvites: () => api.get<MassInvite[]>("/auth/mass-invite"),
+  createMassInvite: (data: { associationId?: string; expiresAt: string; note?: string }) =>
+    api.post<MassInviteCreated>("/auth/mass-invite", data),
+  deleteMassInvite: (id: string) => api.delete<void>(`/auth/mass-invite/${id}`),
 };

@@ -21,6 +21,13 @@ public static class AuthEndpoints
         group.MapPost("/logout", Logout).AllowAnonymous();
         group.MapGet("/me", GetMe).RequireAuthorization();
 
+        // Mass-invite (one shared link, many self-registering users)
+        group.MapPost("/mass-invite", CreateMassInvite).RequireAuthorization();
+        group.MapGet("/mass-invite", ListMassInvites).RequireAuthorization();
+        group.MapDelete("/mass-invite/{id:guid}", DeleteMassInvite).RequireAuthorization();
+        group.MapGet("/mass-invite/{token}", LookupMassInvite).AllowAnonymous();
+        group.MapPost("/mass-invite/redeem", RedeemMassInvite).AllowAnonymous();
+
         return app;
     }
 
@@ -156,8 +163,162 @@ public static class AuthEndpoints
         });
     }
 
+    private static async Task<IResult> CreateMassInvite(
+        [FromBody] CreateMassInviteRequest req,
+        AuthService authService,
+        IConfiguration config,
+        HttpContext ctx,
+        FrovollseterDbContext db,
+        CancellationToken ct)
+    {
+        var role = ctx.User.FindFirst("role")?.Value;
+        if (role is not ("admin" or "systemadmin")) return Results.Forbid();
+        if (!Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var callerId))
+            return Results.Unauthorized();
+
+        Guid associationId;
+        if (role == "systemadmin")
+        {
+            if (req.AssociationId is null)
+                return Results.BadRequest(new { error = "AssociationId er påkrevd for SystemAdmin." });
+            associationId = req.AssociationId.Value;
+            var assocExists = await db.Associations.AnyAsync(a => a.Id == associationId, ct);
+            if (!assocExists) return Results.BadRequest(new { error = "Ugyldig forening." });
+        }
+        else
+        {
+            if (!Guid.TryParse(ctx.User.FindFirst("assoc")?.Value, out associationId))
+                return Results.Unauthorized();
+        }
+
+        // Default to 14 days if no expiration provided.
+        var expiresAt = req.ExpiresAt ?? DateTimeOffset.UtcNow.AddDays(14);
+
+        try
+        {
+            var created = await authService.CreateMassInviteAsync(associationId, callerId, expiresAt, req.Note, ct);
+            var appUrl = config["App:BaseUrl"] ?? "https://frovollseter.no";
+            var link = $"{appUrl}/auth/join/{Uri.EscapeDataString(created.RawToken)}";
+            var callerName = ctx.User.FindFirst("name")?.Value ?? "";
+            return Results.Ok(new
+            {
+                created.Invite.Id,
+                Token = created.RawToken,
+                Url = link,
+                created.Invite.ExpiresAt,
+                created.Invite.CreatedAt,
+                created.Invite.RedemptionCount,
+                created.Invite.Note,
+                IsExpired = created.Invite.IsExpired,
+                Association = new { created.Invite.Association.Id, created.Invite.Association.Name },
+                CreatedBy = new { Id = callerId, DisplayName = callerName }
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(new { error = ex.Message });
+        }
+    }
+
+    private static async Task<IResult> ListMassInvites(
+        AuthService authService,
+        HttpContext ctx,
+        CancellationToken ct)
+    {
+        var role = ctx.User.FindFirst("role")?.Value;
+        if (role is not ("admin" or "systemadmin")) return Results.Forbid();
+
+        Guid? filter = null;
+        if (role == "admin")
+        {
+            if (!Guid.TryParse(ctx.User.FindFirst("assoc")?.Value, out var assocId))
+                return Results.Unauthorized();
+            filter = assocId;
+        }
+
+        var invites = await authService.ListMassInvitesAsync(filter, ct);
+        return Results.Ok(invites.Select(i => new
+        {
+            i.Id,
+            i.ExpiresAt,
+            i.CreatedAt,
+            i.RedemptionCount,
+            i.Note,
+            IsExpired = i.IsExpired,
+            Association = new { i.Association.Id, i.Association.Name },
+            CreatedBy = new { i.CreatedBy.Id, i.CreatedBy.DisplayName }
+        }));
+    }
+
+    private static async Task<IResult> LookupMassInvite(
+        string token,
+        AuthService authService,
+        CancellationToken ct)
+    {
+        var invite = await authService.GetMassInviteByTokenAsync(token, ct);
+        if (invite is null) return Results.NotFound(new { error = "Ugyldig invitasjon." });
+        if (invite.IsExpired) return Results.BadRequest(new { error = "Invitasjonen er utløpt." });
+
+        return Results.Ok(new
+        {
+            invite.ExpiresAt,
+            Association = new { invite.Association.Id, invite.Association.Name, invite.Association.Type }
+        });
+    }
+
+    private static async Task<IResult> DeleteMassInvite(
+        Guid id,
+        AuthService authService,
+        HttpContext ctx,
+        CancellationToken ct)
+    {
+        var role = ctx.User.FindFirst("role")?.Value;
+        if (role is not ("admin" or "systemadmin")) return Results.Forbid();
+
+        var invite = await authService.GetMassInviteByIdAsync(id, ct);
+        if (invite is null) return Results.NotFound();
+
+        // Admin can only delete invites for their own association.
+        if (role == "admin")
+        {
+            if (!Guid.TryParse(ctx.User.FindFirst("assoc")?.Value, out var callerAssocId))
+                return Results.Unauthorized();
+            if (invite.AssociationId != callerAssocId) return Results.Forbid();
+        }
+
+        await authService.DeleteMassInviteAsync(id, ct);
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> RedeemMassInvite(
+        [FromBody] RedeemMassInviteRequest req,
+        AuthService authService,
+        HttpContext ctx,
+        CancellationToken ct)
+    {
+        try
+        {
+            var result = await authService.RedeemMassInviteAsync(req.Token, req.Email, req.DisplayName, ct);
+            if (result is null) return Results.BadRequest(new { error = "Ugyldig eller utløpt invitasjon." });
+
+            // Mass-invite registrants are immediately logged in (no remember-me; they can opt in next time).
+            SetRefreshCookie(ctx, result.Tokens.RefreshToken, rememberMe: false);
+            return Results.Ok(new
+            {
+                accessToken = result.Tokens.AccessToken,
+                user = new { result.User.Id, result.User.Email, result.User.DisplayName }
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(new { error = ex.Message });
+        }
+    }
+
     private record InviteRequest(string Email, string DisplayName, Guid? AssociationId, string? Role);
     private record MagicLinkRequest(string Email, bool? RememberMe);
     private record VerifyTokenRequest(string Token);
     private record VerifyOtpRequest(string Email, string Code);
+    private record CreateMassInviteRequest(Guid? AssociationId, DateTimeOffset? ExpiresAt, string? Note);
+    private record RedeemMassInviteRequest(string Token, string Email, string DisplayName);
 }

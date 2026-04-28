@@ -13,6 +13,7 @@ interface AuthActions {
   verifyMagicLink: (token: string) => Promise<boolean>;
   requestOtp: (email: string) => Promise<void>;
   verifyOtp: (email: string, code: string) => Promise<boolean>;
+  redeemMassInvite: (token: string, email: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -103,6 +104,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchMe, storeToken]);
 
+  const redeemMassInvite = useCallback(
+    async (token: string, email: string, displayName: string): Promise<void> => {
+      // Errors propagate so the caller can show a precise message (conflict, expired, etc).
+      const res = await api.post<{ accessToken: string }>("/auth/mass-invite/redeem", {
+        token,
+        email,
+        displayName,
+      });
+      storeToken(res.accessToken, false);
+      await fetchMe();
+    },
+    [fetchMe, storeToken],
+  );
+
   const logout = async () => {
     await api.post("/auth/logout");
     clearStoredToken();
@@ -120,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         verifyMagicLink,
         requestOtp,
         verifyOtp,
+        redeemMassInvite,
         logout,
       }}
     >
