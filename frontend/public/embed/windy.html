@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Windy webcam</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: #000; overflow: hidden; }
+    /* Force any element Windy injects to fill the viewport. */
+    body > a, body > div, body > iframe { display: block; width: 100% !important; height: 100% !important; border: 0; }
+    .msg { color: #fff; font-family: system-ui, sans-serif; padding: 1rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="status" class="msg">Loading Windy player…</div>
+  <script>
+    (function () {
+      var status = document.getElementById("status");
+      var p = new URLSearchParams(location.search);
+      var id = p.get("id");
+      if (!id) {
+        status.textContent = "Missing ?id=<windy webcam id>";
+        return;
+      }
+
+      var a = document.createElement("a");
+      a.setAttribute("name", "windy-webcam-timelapse-player");
+      a.setAttribute("data-id", id);
+      a.setAttribute("data-play", p.get("play") || "day");
+      a.setAttribute("data-loop", p.get("loop") || "1");
+      a.setAttribute("data-auto-play", p.get("autoplay") || "1");
+      a.setAttribute("data-force-full-screen-on-overlay-play", "0");
+      a.setAttribute("data-interactive", p.get("interactive") || "1");
+      a.setAttribute("href", "https://windy.com/webcams/" + encodeURIComponent(id));
+      a.setAttribute("target", "_blank");
+      a.textContent = "Windy webcam " + id;
+      document.body.appendChild(a);
+
+      var s = document.createElement("script");
+      s.async = true;
+      s.type = "text/javascript";
+      s.src = "https://webcams.windy.com/webcams/public/embed/v2/script/player.js";
+      s.onload = function () {
+        // Player took over; remove the loading message.
+        if (status && status.parentNode) status.parentNode.removeChild(status);
+      };
+      s.onerror = function () {
+        status.innerHTML = "Could not load Windy player.js — check ad-blockers or network.";
+      };
+      document.body.appendChild(s);
+
+      // If after 8 seconds nothing happened, surface that.
+      setTimeout(function () {
+        if (status && status.parentNode && status.textContent.indexOf("Loading") === 0) {
+          status.innerHTML = "Windy player did not render. Open devtools → Console for errors. Camera id: " + id;
+        }
+      }, 8000);
+    })();
+  </script>
+</body>
+</html>

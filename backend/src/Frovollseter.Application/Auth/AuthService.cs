@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace Frovollseter.Application.Auth;
 
+public record MagicLinkVerifyResult(TokenPair Tokens, bool RememberMe);
+
 public class AuthService(
     FrovollseterDbContext db,
     IEmailService email,
@@ -69,7 +71,7 @@ public class AuthService(
         return user;
     }
 
-    public async Task RequestMagicLinkAsync(string emailAddress, CancellationToken ct)
+    public async Task RequestMagicLinkAsync(string emailAddress, bool rememberMe, CancellationToken ct)
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == emailAddress && u.Status == UserStatus.Active, ct);
         if (user is null) return; // silent — don't reveal if email exists
@@ -83,22 +85,27 @@ public class AuthService(
             Type = AuthTokenType.MagicLink,
             Channel = AuthChannel.Email,
             ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15),
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTimeOffset.UtcNow,
+            RememberMe = rememberMe
         });
         await db.SaveChangesAsync(ct);
 
         var appUrl = config["App:BaseUrl"] ?? "https://frovollseter.no";
         var link = $"{appUrl}/auth/verify?token={Uri.EscapeDataString(rawToken)}";
+        var rememberLine = rememberMe
+            ? "<p>Du forblir innlogget i 30 dager etter at du har klikket lenken.</p>"
+            : "";
         var html = $"""
             <p>Her er din innloggingslenke til Frovollseter-portalen:</p>
             <p><a href="{link}">Logg inn</a></p>
             <p>Lenken er gyldig i 15 minutter.</p>
+            {rememberLine}
             """;
 
         await email.SendAsync(emailAddress, "Innloggingslenke til Frovollseter", html, ct);
     }
 
-    public async Task<TokenPair?> VerifyMagicLinkAsync(string rawToken, CancellationToken ct)
+    public async Task<MagicLinkVerifyResult?> VerifyMagicLinkAsync(string rawToken, CancellationToken ct)
     {
         var hash = HashToken(rawToken);
         var token = await db.AuthTokens
@@ -112,7 +119,8 @@ public class AuthService(
         token.User.LastLoginAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        return tokenService.Issue(token.User);
+        var pair = tokenService.Issue(token.User, token.RememberMe);
+        return new MagicLinkVerifyResult(pair, token.RememberMe);
     }
 
     public async Task RequestOtpAsync(string emailAddress, CancellationToken ct)

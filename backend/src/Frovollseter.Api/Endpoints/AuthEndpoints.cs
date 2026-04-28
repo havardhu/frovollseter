@@ -70,7 +70,7 @@ public static class AuthEndpoints
         AuthService authService,
         CancellationToken ct)
     {
-        await authService.RequestMagicLinkAsync(req.Email, ct);
+        await authService.RequestMagicLinkAsync(req.Email, req.RememberMe ?? false, ct);
         return Results.Ok(new { message = "If that email exists, a link has been sent." });
     }
 
@@ -80,11 +80,11 @@ public static class AuthEndpoints
         HttpContext ctx,
         CancellationToken ct)
     {
-        var pair = await authService.VerifyMagicLinkAsync(req.Token, ct);
-        if (pair is null) return Results.Unauthorized();
+        var result = await authService.VerifyMagicLinkAsync(req.Token, ct);
+        if (result is null) return Results.Unauthorized();
 
-        SetRefreshCookie(ctx, pair.RefreshToken);
-        return Results.Ok(new { accessToken = pair.AccessToken });
+        SetRefreshCookie(ctx, result.Tokens.RefreshToken, result.RememberMe);
+        return Results.Ok(new { accessToken = result.Tokens.AccessToken, rememberMe = result.RememberMe });
     }
 
     private static async Task<IResult> RequestOtp(
@@ -105,7 +105,7 @@ public static class AuthEndpoints
         var pair = await authService.VerifyOtpAsync(req.Email, req.Code, ct);
         if (pair is null) return Results.Unauthorized();
 
-        SetRefreshCookie(ctx, pair.RefreshToken);
+        SetRefreshCookie(ctx, pair.RefreshToken, rememberMe: false);
         return Results.Ok(new { accessToken = pair.AccessToken });
     }
 
@@ -144,20 +144,20 @@ public static class AuthEndpoints
         });
     }
 
-    private static void SetRefreshCookie(HttpContext ctx, string refreshToken)
+    private static void SetRefreshCookie(HttpContext ctx, string refreshToken, bool rememberMe)
     {
         ctx.Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddDays(7),
+            Expires = DateTimeOffset.UtcNow.AddDays(rememberMe ? 30 : 7),
             Path = "/api/auth/refresh"
         });
     }
 
     private record InviteRequest(string Email, string DisplayName, Guid? AssociationId, string? Role);
-    private record MagicLinkRequest(string Email);
+    private record MagicLinkRequest(string Email, bool? RememberMe);
     private record VerifyTokenRequest(string Token);
     private record VerifyOtpRequest(string Email, string Code);
 }

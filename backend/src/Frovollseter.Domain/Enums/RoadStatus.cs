@@ -43,3 +43,16 @@ public enum AuthChannel
     Email,
     Sms
 }
+
+public enum WebcamAccessLevel
+{
+    Public,
+    Members,
+    Private
+}
+
+public enum WebcamFeedType
+{
+    StaticImage,
+    VideoFeed
+}

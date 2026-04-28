@@ -11,7 +11,6 @@ public class FrovollseterDbContext(DbContextOptions<FrovollseterDbContext> optio
     public DbSet<AuthToken> AuthTokens => Set<AuthToken>();
     public DbSet<RoadReport> RoadReports => Set<RoadReport>();
     public DbSet<WebcamStream> WebcamStreams => Set<WebcamStream>();
-    public DbSet<WebcamAccessGrant> WebcamAccessGrants => Set<WebcamAccessGrant>();
     public DbSet<NewsPost> NewsPosts => Set<NewsPost>();
     public DbSet<UsefulLink> UsefulLinks => Set<UsefulLink>();
 
@@ -67,17 +66,10 @@ public class FrovollseterDbContext(DbContextOptions<FrovollseterDbContext> optio
             e.Property(x => x.Title).IsRequired().HasMaxLength(200);
             e.Property(x => x.SourceUrl).IsRequired().HasMaxLength(2048);
             e.Property(x => x.LastImageUrl).HasMaxLength(2048);
+            e.Property(x => x.AccessLevel).HasConversion<string>();
+            e.Property(x => x.FeedType).HasConversion<string>();
             e.HasOne(x => x.Owner).WithMany(u => u.Webcams)
                 .HasForeignKey(x => x.OwnerId);
-        });
-
-        modelBuilder.Entity<WebcamAccessGrant>(e =>
-        {
-            e.HasKey(x => new { x.WebcamId, x.AssociationId });
-            e.HasOne(x => x.Webcam).WithMany(w => w.AccessGrants)
-                .HasForeignKey(x => x.WebcamId);
-            e.HasOne(x => x.Association).WithMany(a => a.WebcamAccess)
-                .HasForeignKey(x => x.AssociationId);
         });
 
         modelBuilder.Entity<NewsPost>(e =>

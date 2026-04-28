@@ -11,5 +11,4 @@ public class Association
 
     public ICollection<User> Members { get; set; } = [];
     public ICollection<NewsPost> NewsPosts { get; set; } = [];
-    public ICollection<WebcamAccessGrant> WebcamAccess { get; set; } = [];
 }

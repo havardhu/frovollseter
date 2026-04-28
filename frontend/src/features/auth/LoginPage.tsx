@@ -15,6 +15,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [mode, setMode] = useState<"link" | "otp">("link");
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       if (mode === "link") {
-        await requestMagicLink(email);
+        await requestMagicLink(email, rememberMe);
         setStep("link-sent");
       } else {
         await requestOtp(email);
@@ -107,6 +108,18 @@ export function LoginPage() {
                 </button>
               </div>
 
+              {mode === "link" && (
+                <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                  Hold meg innlogget i 30 dager
+                </label>
+              )}
+
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <Button type="submit" className="w-full" disabled={loading}>
@@ -121,6 +134,7 @@ export function LoginPage() {
               <p className="font-medium">Sjekk innboksen din</p>
               <p className="text-sm text-muted-foreground">
                 Vi har sendt en innloggingslenke til <strong>{email}</strong>. Lenken er gyldig i 15 minutter.
+                {rememberMe && " Du forblir innlogget i 30 dager etter at du har klikket lenken."}
               </p>
               <Button variant="ghost" size="sm" onClick={() => setStep("email")}>
                 Prøv igjen

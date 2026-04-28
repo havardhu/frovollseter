@@ -46,16 +46,30 @@ export interface NewsPost {
   association: Association;
 }
 
+export type WebcamAccessLevel = "Public" | "Members" | "Private";
+export type WebcamFeedType = "StaticImage" | "VideoFeed";
+
 export interface WebcamStream {
   id: string;
   title: string;
   description: string | null;
   locationHint: string | null;
-  isPublic: boolean;
+  accessLevel: WebcamAccessLevel;
+  feedType: WebcamFeedType;
+  sourceUrl: string;
   lastImageUrl: string | null;
   lastImageAt: string | null;
   createdAt: string;
   owner: { id: string; displayName: string };
+}
+
+export interface WebcamRequest {
+  title: string;
+  description: string | null;
+  locationHint: string | null;
+  accessLevel: WebcamAccessLevel;
+  feedType: WebcamFeedType;
+  sourceUrl: string;
 }
 
 export interface UsefulLink {

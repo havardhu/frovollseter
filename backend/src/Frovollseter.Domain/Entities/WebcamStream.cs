@@ -1,3 +1,5 @@
+using Frovollseter.Domain.Enums;
+
 namespace Frovollseter.Domain.Entities;
 
 public class WebcamStream
@@ -7,21 +9,12 @@ public class WebcamStream
     public string Title { get; set; } = "";
     public string? Description { get; set; }
     public string? LocationHint { get; set; }
-    public bool IsPublic { get; set; }
+    public WebcamAccessLevel AccessLevel { get; set; } = WebcamAccessLevel.Members;
+    public WebcamFeedType FeedType { get; set; } = WebcamFeedType.StaticImage;
     public string SourceUrl { get; set; } = "";
     public string? LastImageUrl { get; set; }
     public DateTimeOffset? LastImageAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 
     public User Owner { get; set; } = null!;
-    public ICollection<WebcamAccessGrant> AccessGrants { get; set; } = [];
-}
-
-public class WebcamAccessGrant
-{
-    public Guid WebcamId { get; set; }
-    public Guid AssociationId { get; set; }
-
-    public WebcamStream Webcam { get; set; } = null!;
-    public Association Association { get; set; } = null!;
 }

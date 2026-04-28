@@ -17,7 +17,7 @@ public class TokenService(IConfiguration config)
     private readonly string _issuer = config["Jwt:Issuer"] ?? "frovollseter-api";
     private readonly string _audience = config["Jwt:Audience"] ?? "frovollseter-app";
 
-    public TokenPair Issue(User user)
+    public TokenPair Issue(User user, bool rememberMe = false)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -31,11 +31,17 @@ public class TokenService(IConfiguration config)
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
         };
 
+        // Refresh-token rotation isn't wired up yet, so for "remember me"
+        // we issue a long-lived access token that survives 30 days.
+        var expires = rememberMe
+            ? DateTime.UtcNow.AddDays(30)
+            : DateTime.UtcNow.AddMinutes(15);
+
         var token = new JwtSecurityToken(
             issuer: _issuer,
             audience: _audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(15),
+            expires: expires,
             signingCredentials: creds);
 
         var accessToken = new JwtSecurityTokenHandler().WriteToken(token);

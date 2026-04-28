@@ -12,6 +12,7 @@ public class AuthToken
     public DateTimeOffset ExpiresAt { get; set; }
     public DateTimeOffset? UsedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+    public bool RememberMe { get; set; }
 
     public User User { get; set; } = null!;
 

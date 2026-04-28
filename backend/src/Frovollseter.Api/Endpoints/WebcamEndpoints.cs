@@ -1,4 +1,5 @@
 using Frovollseter.Domain.Entities;
+using Frovollseter.Domain.Enums;
 using Frovollseter.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,8 +18,6 @@ public static class WebcamEndpoints
         group.MapPatch("/{id:guid}", Update).RequireAuthorization();
         group.MapDelete("/{id:guid}", Delete).RequireAuthorization();
         group.MapPost("/{id:guid}/image", UploadImage).RequireAuthorization();
-        group.MapPost("/{id:guid}/access/{assocId:guid}", GrantAccess).RequireAuthorization();
-        group.MapDelete("/{id:guid}/access/{assocId:guid}", RevokeAccess).RequireAuthorization();
 
         return app;
     }
@@ -26,21 +25,23 @@ public static class WebcamEndpoints
     private static async Task<IResult> GetAll(HttpContext ctx, FrovollseterDbContext db, CancellationToken ct)
     {
         Guid? currentUserId = Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var uid) ? uid : null;
-        Guid? currentAssocId = Guid.TryParse(ctx.User.FindFirst("assoc")?.Value, out var aid) ? aid : null;
+        var isAuthenticated = currentUserId is not null;
 
         var query = db.WebcamStreams
             .Include(w => w.Owner)
-            .Include(w => w.AccessGrants)
             .Where(w =>
-                w.IsPublic ||
-                (currentUserId != null && w.OwnerId == currentUserId) ||
-                (currentAssocId != null && w.AccessGrants.Any(g => g.AssociationId == currentAssocId)));
+                w.AccessLevel == WebcamAccessLevel.Public ||
+                (isAuthenticated && w.AccessLevel == WebcamAccessLevel.Members) ||
+                (currentUserId != null && w.OwnerId == currentUserId));
 
         var webcams = await query
             .OrderByDescending(w => w.LastImageAt)
             .Select(w => new
             {
-                w.Id, w.Title, w.Description, w.LocationHint, w.IsPublic,
+                w.Id, w.Title, w.Description, w.LocationHint,
+                AccessLevel = w.AccessLevel.ToString(),
+                FeedType = w.FeedType.ToString(),
+                w.SourceUrl,
                 w.LastImageUrl, w.LastImageAt, w.CreatedAt,
                 Owner = new { w.Owner.Id, w.Owner.DisplayName }
             })
@@ -52,25 +53,30 @@ public static class WebcamEndpoints
     private static async Task<IResult> GetById(Guid id, HttpContext ctx, FrovollseterDbContext db, CancellationToken ct)
     {
         Guid? currentUserId = Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var uid) ? uid : null;
-        Guid? currentAssocId = Guid.TryParse(ctx.User.FindFirst("assoc")?.Value, out var aid) ? aid : null;
+        var isAuthenticated = currentUserId is not null;
 
         var webcam = await db.WebcamStreams
             .Include(w => w.Owner)
-            .Include(w => w.AccessGrants)
             .FirstOrDefaultAsync(w => w.Id == id, ct);
 
         if (webcam is null) return Results.NotFound();
 
-        var canAccess = webcam.IsPublic
-            || (currentUserId != null && webcam.OwnerId == currentUserId)
-            || (currentAssocId != null && webcam.AccessGrants.Any(g => g.AssociationId == currentAssocId));
+        var canAccess = webcam.AccessLevel switch
+        {
+            WebcamAccessLevel.Public => true,
+            WebcamAccessLevel.Members => isAuthenticated,
+            WebcamAccessLevel.Private => currentUserId != null && webcam.OwnerId == currentUserId,
+            _ => false
+        };
 
         if (!canAccess) return Results.NotFound(); // treat as not found to avoid leaking existence
 
         return Results.Ok(new
         {
             webcam.Id, webcam.Title, webcam.Description, webcam.LocationHint,
-            webcam.IsPublic, webcam.SourceUrl, webcam.LastImageUrl, webcam.LastImageAt,
+            AccessLevel = webcam.AccessLevel.ToString(),
+            FeedType = webcam.FeedType.ToString(),
+            webcam.SourceUrl, webcam.LastImageUrl, webcam.LastImageAt,
             Owner = new { webcam.Owner.Id, webcam.Owner.DisplayName }
         });
     }
@@ -84,6 +90,15 @@ public static class WebcamEndpoints
         if (!Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var userId))
             return Results.Unauthorized();
 
+        if (string.IsNullOrWhiteSpace(req.Title) || string.IsNullOrWhiteSpace(req.SourceUrl))
+            return Results.BadRequest(new { error = "Title and SourceUrl are required" });
+
+        if (!Enum.TryParse<WebcamAccessLevel>(req.AccessLevel, true, out var accessLevel))
+            return Results.BadRequest(new { error = "AccessLevel must be Public, Members, or Private" });
+
+        if (!Enum.TryParse<WebcamFeedType>(req.FeedType, true, out var feedType))
+            return Results.BadRequest(new { error = "FeedType must be StaticImage or VideoFeed" });
+
         var webcam = new WebcamStream
         {
             Id = Guid.NewGuid(),
@@ -91,7 +106,8 @@ public static class WebcamEndpoints
             Title = req.Title,
             Description = req.Description,
             LocationHint = req.LocationHint,
-            IsPublic = req.IsPublic,
+            AccessLevel = accessLevel,
+            FeedType = feedType,
             SourceUrl = req.SourceUrl,
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -116,10 +132,17 @@ public static class WebcamEndpoints
         if (webcam.OwnerId != userId && ctx.User.FindFirst("role")?.Value is not ("admin" or "systemadmin"))
             return Results.Forbid();
 
+        if (!Enum.TryParse<WebcamAccessLevel>(req.AccessLevel, true, out var accessLevel))
+            return Results.BadRequest(new { error = "AccessLevel must be Public, Members, or Private" });
+
+        if (!Enum.TryParse<WebcamFeedType>(req.FeedType, true, out var feedType))
+            return Results.BadRequest(new { error = "FeedType must be StaticImage or VideoFeed" });
+
         webcam.Title = req.Title;
         webcam.Description = req.Description;
         webcam.LocationHint = req.LocationHint;
-        webcam.IsPublic = req.IsPublic;
+        webcam.AccessLevel = accessLevel;
+        webcam.FeedType = feedType;
         webcam.SourceUrl = req.SourceUrl;
         await db.SaveChangesAsync(ct);
         return Results.NoContent();
@@ -162,43 +185,13 @@ public static class WebcamEndpoints
         return Results.Ok(new { webcam.LastImageUrl, webcam.LastImageAt });
     }
 
-    private static async Task<IResult> GrantAccess(
-        Guid id, Guid assocId, HttpContext ctx, FrovollseterDbContext db, CancellationToken ct)
-    {
-        if (!Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var userId)) return Results.Unauthorized();
+    private record WebcamRequest(
+        string Title,
+        string? Description,
+        string? LocationHint,
+        string AccessLevel,
+        string FeedType,
+        string SourceUrl);
 
-        var webcam = await db.WebcamStreams.FindAsync([id], ct);
-        if (webcam is null) return Results.NotFound();
-        if (webcam.OwnerId != userId) return Results.Forbid();
-
-        if (!await db.WebcamAccessGrants.AnyAsync(g => g.WebcamId == id && g.AssociationId == assocId, ct))
-        {
-            db.WebcamAccessGrants.Add(new WebcamAccessGrant { WebcamId = id, AssociationId = assocId });
-            await db.SaveChangesAsync(ct);
-        }
-
-        return Results.NoContent();
-    }
-
-    private static async Task<IResult> RevokeAccess(
-        Guid id, Guid assocId, HttpContext ctx, FrovollseterDbContext db, CancellationToken ct)
-    {
-        if (!Guid.TryParse(ctx.User.FindFirst("sub")?.Value, out var userId)) return Results.Unauthorized();
-
-        var webcam = await db.WebcamStreams.FindAsync([id], ct);
-        if (webcam is null) return Results.NotFound();
-        if (webcam.OwnerId != userId) return Results.Forbid();
-
-        var grant = await db.WebcamAccessGrants.FindAsync([id, assocId], ct);
-        if (grant is not null)
-        {
-            db.WebcamAccessGrants.Remove(grant);
-            await db.SaveChangesAsync(ct);
-        }
-
-        return Results.NoContent();
-    }
-
-    private record WebcamRequest(string Title, string? Description, string? LocationHint, bool IsPublic, string SourceUrl);
     private record UploadImageRequest(string ImageUrl);
 }
