@@ -4,7 +4,8 @@ public class NewsPost
 {
     public Guid Id { get; set; }
     public Guid AuthorId { get; set; }
-    public Guid AssociationId { get; set; }
+    // Null means the post is global (not tied to a specific association).
+    public Guid? AssociationId { get; set; }
     public string Title { get; set; } = "";
     public string Body { get; set; } = "";
     public bool IsPublished { get; set; }
@@ -13,7 +14,7 @@ public class NewsPost
     public DateTimeOffset UpdatedAt { get; set; }
 
     public User Author { get; set; } = null!;
-    public Association Association { get; set; } = null!;
+    public Association? Association { get; set; }
 }
 
 public class UsefulLink

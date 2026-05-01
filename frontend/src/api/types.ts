@@ -42,8 +42,19 @@ export interface NewsPost {
   isPublished: boolean;
   publishedAt: string | null;
   createdAt: string;
+  updatedAt: string;
   author: { id: string; displayName: string };
-  association: Association;
+  // null = global post (not tied to a specific association)
+  association: Association | null;
+}
+
+export interface NewsPostRequest {
+  title: string;
+  body: string;
+  // Omit / null = leave unchanged on update; on create defaults to caller's own association.
+  associationId?: string | null;
+  // Sysadmins can set this to true to mark a post as global.
+  makeGlobal?: boolean;
 }
 
 export type WebcamAccessLevel = "Public" | "Members" | "Private";

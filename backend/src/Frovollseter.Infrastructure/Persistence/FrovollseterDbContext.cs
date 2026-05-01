@@ -80,8 +80,11 @@ public class FrovollseterDbContext(DbContextOptions<FrovollseterDbContext> optio
             e.Property(x => x.Body).IsRequired();
             e.HasOne(x => x.Author).WithMany(u => u.NewsPosts)
                 .HasForeignKey(x => x.AuthorId);
+            // Nullable association – a null AssociationId marks a global post.
             e.HasOne(x => x.Association).WithMany(a => a.NewsPosts)
-                .HasForeignKey(x => x.AssociationId);
+                .HasForeignKey(x => x.AssociationId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<UsefulLink>(e =>

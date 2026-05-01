@@ -183,3 +183,103 @@
   font-weight: var(--font-medium);
   line-height: 1;
 }
+
+/* Rendered Quill HTML in news posts. Tailwind's preflight strips default
+   styles for h2/h3/ul/blockquote – restore enough for readable formatting. */
+.news-content {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: hsl(var(--foreground));
+}
+.news-content p { margin: 0 0 0.75em; }
+.news-content p:last-child { margin-bottom: 0; }
+.news-content h2 { font-size: var(--text-xl); font-weight: var(--font-semibold); margin: 1em 0 0.5em; }
+.news-content h3 { font-size: var(--text-lg); font-weight: var(--font-semibold); margin: 1em 0 0.5em; }
+.news-content strong { font-weight: var(--font-semibold); }
+.news-content em { font-style: italic; }
+.news-content u { text-decoration: underline; }
+.news-content s { text-decoration: line-through; }
+.news-content a { color: hsl(var(--primary)); text-decoration: underline; }
+.news-content ul,
+.news-content ol { margin: 0 0 0.75em 1.25em; padding-left: 1em; }
+.news-content ul { list-style: disc; }
+.news-content ol { list-style: decimal; }
+.news-content li { margin-bottom: 0.25em; }
+.news-content blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 0.75em;
+  margin: 0 0 0.75em;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Quill editor – ensure dark mode picks up theme colors and the editor sits
+   nicely inside our card wrapper. */
+.news-editor .ql-toolbar.ql-snow,
+.news-editor .ql-container.ql-snow {
+  border-color: hsl(var(--border));
+}
+.news-editor .ql-toolbar.ql-snow {
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+.news-editor .ql-container.ql-snow {
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  min-height: 12rem;
+}
+.dark .news-editor .ql-toolbar .ql-stroke { stroke: hsl(var(--foreground)); }
+.dark .news-editor .ql-toolbar .ql-fill { fill: hsl(var(--foreground)); }
+.dark .news-editor .ql-toolbar .ql-picker-label { color: hsl(var(--foreground)); }
+
+/* Rendered Quill HTML in news posts. Tailwind's preflight strips default
+   styles for h2/h3/ul/blockquote – restore enough for readable formatting. */
+.news-content {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: hsl(var(--foreground));
+}
+.news-content p { margin: 0 0 0.75em; }
+.news-content p:last-child { margin-bottom: 0; }
+.news-content h2 { font-size: var(--text-xl); font-weight: var(--font-semibold); margin: 1em 0 0.5em; }
+.news-content h3 { font-size: var(--text-lg); font-weight: var(--font-semibold); margin: 1em 0 0.5em; }
+.news-content strong { font-weight: var(--font-semibold); }
+.news-content em { font-style: italic; }
+.news-content u { text-decoration: underline; }
+.news-content s { text-decoration: line-through; }
+.news-content a { color: hsl(var(--primary)); text-decoration: underline; }
+.news-content ul,
+.news-content ol { margin: 0 0 0.75em 1.25em; padding-left: 1em; }
+.news-content ul { list-style: disc; }
+.news-content ol { list-style: decimal; }
+.news-content li { margin-bottom: 0.25em; }
+.news-content blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 0.75em;
+  margin: 0 0 0.75em;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Quill editor – ensure dark mode picks up theme colors and the editor sits
+   nicely inside our card wrapper. */
+.news-editor .ql-toolbar.ql-snow,
+.news-editor .ql-container.ql-snow {
+  border-color: hsl(var(--border));
+}
+.news-editor .ql-toolbar.ql-snow {
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+.news-editor .ql-container.ql-snow {
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  min-height: 12rem;
+}
+.dark .news-editor .ql-toolbar .ql-stroke { stroke: hsl(var(--foreground)); }
+.dark .news-editor .ql-toolbar .ql-fill { fill: hsl(var(--foreground)); }
+.dark .news-editor .ql-toolbar .ql-picker-label { color: hsl(var(--foreground)); }

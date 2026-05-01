@@ -6,8 +6,9 @@ import { adminApi } from "./adminApi";
 import { UsersTab } from "./UsersTab";
 import { InvitesTab } from "./InvitesTab";
 import { AssociationsTab } from "./AssociationsTab";
+import { NewsAdminTab } from "@/features/news/NewsAdminTab";
 
-type Tab = "users" | "invites" | "associations";
+type Tab = "users" | "invites" | "associations" | "news";
 
 export function AdminPage() {
   const { isAuthenticated, user } = useAuth();
@@ -60,12 +61,15 @@ export function AdminPage() {
         <p className="text-muted-foreground text-sm mt-1">Administrer brukere og foreninger</p>
       </div>
 
-      <div className="flex border-b gap-2">
+      <div className="flex border-b gap-2 overflow-x-auto">
         <button className={tabClass(tab === "users")} onClick={() => setTab("users")}>
           Brukere
         </button>
         <button className={tabClass(tab === "invites")} onClick={() => setTab("invites")}>
           Invitasjoner
+        </button>
+        <button className={tabClass(tab === "news")} onClick={() => setTab("news")}>
+          Nyheter
         </button>
         {isSystemAdmin && (
           <button className={tabClass(tab === "associations")} onClick={() => setTab("associations")}>
@@ -99,6 +103,7 @@ export function AdminPage() {
               onAssociationsChanged={setAssociations}
             />
           )}
+          {tab === "news" && <NewsAdminTab currentUser={user} />}
         </>
       )}
     </div>

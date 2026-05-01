@@ -103,6 +103,7 @@ app.MapSetupEndpoints();
 app.MapAuthEndpoints();
 app.MapRoadReportEndpoints();
 app.MapNewsEndpoints();
+app.MapAssociationEndpoints();
 app.MapLinksEndpoints();
 app.MapWebcamEndpoints();
 app.MapAdminEndpoints();
