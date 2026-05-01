@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 
 const NAV_ITEMS = [
   { to: "/", label: "Veiforhold", exact: true },
+  { to: "/min-hytte", label: "Min hytte" },
   { to: "/nyheter", label: "Nyheter" },
   { to: "/webkameraer", label: "Webkameraer" },
   { to: "/lenker", label: "Nyttige lenker" },

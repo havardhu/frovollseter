@@ -14,6 +14,12 @@ public class FrovollseterDbContext(DbContextOptions<FrovollseterDbContext> optio
     public DbSet<NewsPost> NewsPosts => Set<NewsPost>();
     public DbSet<UsefulLink> UsefulLinks => Set<UsefulLink>();
     public DbSet<MassInvite> MassInvites => Set<MassInvite>();
+    public DbSet<Cabin> Cabins => Set<Cabin>();
+    public DbSet<CabinMembership> CabinMemberships => Set<CabinMembership>();
+    public DbSet<CabinStorage> CabinStorages => Set<CabinStorage>();
+    public DbSet<CabinGroceryItem> CabinGroceryItems => Set<CabinGroceryItem>();
+    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+    public DbSet<ShoppingListItem> ShoppingListItems => Set<ShoppingListItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -109,6 +115,99 @@ public class FrovollseterDbContext(DbContextOptions<FrovollseterDbContext> optio
             e.HasOne(x => x.CreatedBy).WithMany()
                 .HasForeignKey(x => x.CreatedById)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Cabin>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).IsRequired().HasMaxLength(200);
+            e.HasOne(x => x.CreatedBy).WithMany()
+                .HasForeignKey(x => x.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CabinMembership>(e =>
+        {
+            // Composite primary key — a user can only be a member of a given cabin once.
+            e.HasKey(x => new { x.CabinId, x.UserId });
+            e.HasIndex(x => x.UserId);
+            e.Property(x => x.Role).HasConversion<string>();
+            e.HasOne(x => x.Cabin).WithMany(c => c.Members)
+                .HasForeignKey(x => x.CabinId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.User).WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.AddedBy).WithMany()
+                .HasForeignKey(x => x.AddedById)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<CabinStorage>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).IsRequired().HasMaxLength(100);
+            e.Property(x => x.Icon).HasConversion<string>();
+            e.HasIndex(x => new { x.CabinId, x.SortOrder });
+            e.HasOne(x => x.Cabin).WithMany(c => c.Storages)
+                .HasForeignKey(x => x.CabinId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CabinGroceryItem>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).IsRequired().HasMaxLength(200);
+            e.Property(x => x.NormalizedName).IsRequired().HasMaxLength(200);
+            // Case-insensitive uniqueness within a cabin — one row per distinct name.
+            e.HasIndex(x => new { x.CabinId, x.NormalizedName }).IsUnique();
+            e.HasOne(x => x.Cabin).WithMany(c => c.GroceryItems)
+                .HasForeignKey(x => x.CabinId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InventoryItem>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.CabinId, x.StorageId, x.ExpiryDate });
+            e.HasIndex(x => new { x.CabinId, x.GroceryItemId });
+            e.HasOne(x => x.Cabin).WithMany(c => c.InventoryItems)
+                .HasForeignKey(x => x.CabinId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Storage).WithMany(s => s.InventoryItems)
+                .HasForeignKey(x => x.StorageId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.GroceryItem).WithMany(g => g.InventoryItems)
+                .HasForeignKey(x => x.GroceryItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.AddedBy).WithMany()
+                .HasForeignKey(x => x.AddedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ShoppingListItem>(e =>
+        {
+            e.HasKey(x => x.Id);
+            // Filtered index covers the dominant query: "active items for this cabin".
+            e.HasIndex(x => x.CabinId)
+                .HasFilter("\"PurchasedAt\" IS NULL")
+                .HasDatabaseName("IX_ShoppingListItems_CabinId_Active");
+            e.HasIndex(x => new { x.CabinId, x.PurchasedAt });
+            e.Property(x => x.Note).HasMaxLength(200);
+            e.HasOne(x => x.Cabin).WithMany(c => c.ShoppingListItems)
+                .HasForeignKey(x => x.CabinId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.GroceryItem).WithMany(g => g.ShoppingListItems)
+                .HasForeignKey(x => x.GroceryItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.AddedBy).WithMany()
+                .HasForeignKey(x => x.AddedById)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.PurchasedBy).WithMany()
+                .HasForeignKey(x => x.PurchasedById)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

@@ -10,6 +10,7 @@ import { NewsPage } from "@/features/news/NewsPage";
 import { WebcamsPage } from "@/features/webcams/WebcamsPage";
 import { LinksPage } from "@/features/links/LinksPage";
 import { AdminPage } from "@/features/admin/AdminPage";
+import { MinHyttePage } from "@/features/cabin/MinHyttePage";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/nyheter" element={<NewsPage />} />
             <Route path="/webkameraer" element={<WebcamsPage />} />
             <Route path="/lenker" element={<LinksPage />} />
+            <Route path="/min-hytte" element={<MinHyttePage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Route>
         </Routes>

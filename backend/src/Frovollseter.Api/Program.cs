@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Frovollseter.Api.Endpoints;
 using Frovollseter.Application.Auth;
+using Frovollseter.Application.Cabins;
 using Frovollseter.Infrastructure.Email;
 using Frovollseter.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -25,6 +26,7 @@ builder.Services.AddDbContext<FrovollseterDbContext>(opts =>
 // Auth services
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<CabinAccess>();
 
 // Email — register as IEmailService so the typed HttpClient is used correctly
 builder.Services.AddHttpClient<IEmailService, ResendEmailService>(http =>
@@ -107,6 +109,7 @@ app.MapAssociationEndpoints();
 app.MapLinksEndpoints();
 app.MapWebcamEndpoints();
 app.MapAdminEndpoints();
+app.MapCabinEndpoints();
 
 // Health check
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTimeOffset.UtcNow }))
