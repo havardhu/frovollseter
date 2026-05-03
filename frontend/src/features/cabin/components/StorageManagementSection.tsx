@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ApiError } from "@/api/client";
 import { toast } from "sonner";
-import { Trash2, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,14 +11,15 @@ import { useCabinData } from "../CabinDataContext";
 import type { StorageDto, StorageIcon as StorageIconType } from "../types";
 import { STORAGE_ICONS } from "./StoragePill";
 
+// Labels are used for aria-label and tooltips on the icon buttons.
 const ICON_OPTIONS: { value: StorageIconType; label: string }[] = [
-  { value: "Fridge", label: "🧊 Kjøleskap" },
-  { value: "Freezer", label: "❄️ Fryser" },
-  { value: "Pantry", label: "🌾 Tørrvarer" },
-  { value: "Cellar", label: "🍷 Kjeller" },
-  { value: "Shed", label: "🏚️ Bod" },
-  { value: "Box", label: "📦 Eske" },
-  { value: "Other", label: "📍 Annet" },
+  { value: "Fridge", label: "Kjøleskap" },
+  { value: "Freezer", label: "Fryser" },
+  { value: "Pantry", label: "Tørrvarer" },
+  { value: "Cellar", label: "Kjeller" },
+  { value: "Shed", label: "Bod" },
+  { value: "Box", label: "Eske" },
+  { value: "Other", label: "Annet" },
 ];
 
 export function StorageManagementSection() {
@@ -115,50 +116,51 @@ export function StorageManagementSection() {
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <ul className="flex flex-col gap-2">
-          {sorted.map((s, i) => (
-            <li
-              key={s.id}
-              className="flex items-center gap-2 rounded-md border border-input p-2"
-            >
-              <span aria-hidden className="text-lg">
-                {STORAGE_ICONS[s.icon]}
-              </span>
-              <input
-                defaultValue={s.name}
-                onBlur={(e) => handleRename(s, e.target.value)}
-                className="flex-1 bg-transparent text-sm focus-visible:outline-none"
-              />
-              <span className="text-xs text-muted-foreground">
-                {s.isTempControlled ? "Kjølt" : "Tørt"}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => move(s, -1)}
-                disabled={i === 0}
-                aria-label="Flytt opp"
+          {sorted.map((s, i) => {
+            const Icon = STORAGE_ICONS[s.icon];
+            return (
+              <li
+                key={s.id}
+                className="flex items-center gap-2 rounded-md border border-input p-2"
               >
-                ↑
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => move(s, 1)}
-                disabled={i === sorted.length - 1}
-                aria-label="Flytt ned"
-              >
-                ↓
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => handleDelete(s)}
-                aria-label={`Slett ${s.name}`}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </li>
-          ))}
+                <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
+                <input
+                  defaultValue={s.name}
+                  onBlur={(e) => handleRename(s, e.target.value)}
+                  className="flex-1 bg-transparent text-sm focus-visible:outline-none"
+                />
+                <span className="text-xs text-muted-foreground">
+                  {s.isTempControlled ? "Kjølt" : "Tørt"}
+                </span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => move(s, -1)}
+                  disabled={i === 0}
+                  aria-label="Flytt opp"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => move(s, 1)}
+                  disabled={i === sorted.length - 1}
+                  aria-label="Flytt ned"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleDelete(s)}
+                  aria-label={`Slett ${s.name}`}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </li>
+            );
+          })}
         </ul>
 
         {creating ? (
@@ -175,19 +177,32 @@ export function StorageManagementSection() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="new-storage-icon">Ikon</Label>
-              <select
-                id="new-storage-icon"
-                value={newIcon}
-                onChange={(e) => setNewIcon(e.target.value as StorageIconType)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              <Label id="new-storage-icon-label">Ikon</Label>
+              <div
+                className="flex flex-wrap gap-2"
+                role="radiogroup"
+                aria-labelledby="new-storage-icon-label"
               >
-                {ICON_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+                {ICON_OPTIONS.map((o) => {
+                  const Icon = STORAGE_ICONS[o.value];
+                  const selected = newIcon === o.value;
+                  return (
+                    <Button
+                      key={o.value}
+                      type="button"
+                      size="icon"
+                      variant={selected ? "default" : "outline"}
+                      onClick={() => setNewIcon(o.value)}
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={o.label}
+                      title={o.label}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input

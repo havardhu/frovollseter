@@ -197,7 +197,10 @@ export function InventoryTab({ cabinId }: Props) {
           {grouped.map(({ storage, items: groupItems }) => (
             <div key={storage.id} className="flex flex-col gap-1">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <span aria-hidden>{STORAGE_ICONS[storage.icon]}</span>
+                {(() => {
+                  const Icon = STORAGE_ICONS[storage.icon];
+                  return <Icon className="h-4 w-4" aria-hidden />;
+                })()}
                 <span>{storage.name}</span>
                 <span className="text-xs">({groupItems.length})</span>
               </div>
@@ -220,7 +223,7 @@ export function InventoryTab({ cabinId }: Props) {
 
 interface RowProps {
   item: InventoryItemDto;
-  // Whether to show the storage emoji at the start of the row (used in
+  // Whether to show the storage icon at the start of the row (used in
   // filtered/non-grouped view; in grouped view the storage header above
   // already conveys this).
   showStorageIcon: boolean;
@@ -252,11 +255,12 @@ function ItemRow({
         onClick={onToggle}
         className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-accent/50 transition-colors"
       >
-        {showStorageIcon && (
-          <span aria-hidden className="flex-shrink-0">
-            {STORAGE_ICONS[item.storageIcon]}
-          </span>
-        )}
+        {showStorageIcon && (() => {
+          const Icon = STORAGE_ICONS[item.storageIcon];
+          return (
+            <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" aria-hidden />
+          );
+        })()}
         <span className="flex-1 truncate text-sm font-medium">
           {item.groceryName}
         </span>
@@ -290,7 +294,7 @@ function ItemRow({
             >
               {storages.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {STORAGE_ICONS[s.icon]} {s.name}
+                  {s.name}
                 </option>
               ))}
             </select>

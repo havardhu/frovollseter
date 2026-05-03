@@ -1,13 +1,26 @@
+import {
+  MapPin,
+  Package,
+  Refrigerator,
+  Snowflake,
+  Warehouse,
+  Wheat,
+  Wine,
+  type LucideIcon,
+} from "lucide-react";
 import type { StorageIcon } from "../types";
 
-const ICONS: Record<StorageIcon, string> = {
-  Fridge: "🧊",
-  Freezer: "❄️",
-  Pantry: "🌾",
-  Cellar: "🍷",
-  Shed: "🏚️",
-  Box: "📦",
-  Other: "📍",
+// Monochrome lucide icons — kept in sync with the app's overall icon style.
+// Native <option> elements can't render React components, so dropdowns just
+// use the storage name; the icon shows up wherever HTML allows it.
+const ICONS: Record<StorageIcon, LucideIcon> = {
+  Fridge: Refrigerator,
+  Freezer: Snowflake,
+  Pantry: Wheat,
+  Cellar: Wine,
+  Shed: Warehouse,
+  Box: Package,
+  Other: MapPin,
 };
 
 interface Props {
@@ -19,6 +32,7 @@ interface Props {
 }
 
 export function StoragePill({ icon, name, active, onClick, className }: Props) {
+  const Icon = ICONS[icon];
   const base =
     "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors";
   const variant = active
@@ -28,7 +42,7 @@ export function StoragePill({ icon, name, active, onClick, className }: Props) {
   if (!onClick) {
     return (
       <span className={`${base} ${variant} ${className ?? ""}`}>
-        <span aria-hidden>{ICONS[icon]}</span>
+        <Icon className="h-4 w-4" aria-hidden />
         <span>{name}</span>
       </span>
     );
@@ -40,7 +54,7 @@ export function StoragePill({ icon, name, active, onClick, className }: Props) {
       onClick={onClick}
       className={`${base} ${variant} ${className ?? ""}`}
     >
-      <span aria-hidden>{ICONS[icon]}</span>
+      <Icon className="h-4 w-4" aria-hidden />
       <span>{name}</span>
     </button>
   );

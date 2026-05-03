@@ -7,7 +7,6 @@ import { addInventoryItem } from "../api";
 import type { InventoryItemDto, StorageDto } from "../types";
 import { GroceryCombobox } from "./GroceryCombobox";
 import { QuantityStepper } from "./QuantityStepper";
-import { STORAGE_ICONS } from "./StoragePill";
 
 interface Props {
   cabinId: string;
@@ -80,7 +79,7 @@ export function AddInventoryItemDialog({
             >
               {storages.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {STORAGE_ICONS[s.icon]} {s.name}
+                  {s.name}
                 </option>
               ))}
             </select>

@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLastStorageForGrocery, purchaseShoppingItem } from "../api";
 import type { ShoppingItemDto, StorageDto } from "../types";
-import { STORAGE_ICONS } from "./StoragePill";
 
 interface Props {
   cabinId: string;
@@ -88,7 +87,7 @@ export function PurchaseDialog({
             >
               {storages.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {STORAGE_ICONS[s.icon]} {s.name}
+                  {s.name}
                 </option>
               ))}
             </select>
